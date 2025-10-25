@@ -1,0 +1,314 @@
+name: Continuous Integration
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+env:
+  FUNCTION_NAME: "python-lambda-template"
+  PYTHON_VERSION: "3.12"
+  AWS_REGION: "us-west-1"
+  AWS_ACCOUNT_ID: "670469590993"
+  GH_OIDC_ROLE_NAME: "github-jirehhuang-oidc-lambda-deployer"
+
+jobs:
+  pr-title:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: amannn/action-semantic-pull-request@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          requireScope: false
+
+  lint-and-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
+        uses: abatilo/actions-poetry@v4
+        with:
+          poetry-version: "2.1.4"
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Run pre-commit
+        run: poetry run pre-commit run --all-files
+
+      - name: Run pylint
+        run: |
+          SCORE=$(poetry run pylint lambda_function --exit-zero --score=y | grep "Your code has been rated at" | awk '{print $7}' | cut -d'/' -f1)
+          echo "Pylint score: $SCORE"
+          if [ -n "$SCORE" ] && ! python -c "exit(0 if float('$SCORE') >= 10.0 else 1)"; then
+            echo "ERROR: Pylint score < 10.0"
+            exit 1
+          fi
+
+      - name: Run tests
+        run: poetry run pytest
+
+      - name: Check coverage
+        run: poetry run python .github/scripts/check_coverage.py --min 95 coverage.xml
+
+  deploy-staging:
+    if: github.event_name == 'pull_request'
+    needs: [lint-and-tests]
+    runs-on: ubuntu-latest
+    concurrency:
+      group: staging-deploy
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
+        uses: abatilo/actions-poetry@v4
+        with:
+          poetry-version: "2.1.4"
+
+      - name: Install deps for packaging
+        run: poetry install --only main
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/${{ env.GH_OIDC_ROLE_NAME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Check if Lambda execution role exists and has required policy
+        run: |
+          set -euo pipefail
+
+          ROLE_NAME="${FUNCTION_NAME}-role"
+
+          # Check that the role exists
+          if ! aws iam get-role --role-name "${ROLE_NAME}" >/dev/null 2>&1; then
+            echo "❌ Execution role ${ROLE_NAME} does not exist. Please create it first."
+            exit 1
+          fi
+          echo "✅ Role ${ROLE_NAME} exists"
+
+          # Check for AWSLambdaBasicExecutionRole managed policy attachment
+          attached=$(aws iam list-attached-role-policies --role-name "${ROLE_NAME}" \
+                    --query 'AttachedPolicies[*].PolicyName' --output text)
+
+          if echo "$attached" | grep -q "AWSLambdaBasicExecutionRole"; then
+            echo "✅ Role has AWSLambdaBasicExecutionRole attached"
+          else
+            echo "❌ Role is missing AWSLambdaBasicExecutionRole"
+            exit 1
+          fi
+
+      - name: Build Lambda ZIP
+        run: |
+          set -e
+          BUILD_DIR=".package"
+          rm -rf "$BUILD_DIR" lambda.zip
+          mkdir -p "$BUILD_DIR"
+          poetry self add poetry-plugin-export
+          poetry export -f requirements.txt --without-hashes | pip install -r /dev/stdin -t "$BUILD_DIR"
+          cp -r lambda_function/ "$BUILD_DIR"/
+          cd "$BUILD_DIR" && zip -r ../lambda.zip .
+
+      - name: Ensure Lambda function exists
+        run: |
+          set -euo pipefail
+          ROLE_NAME="${FUNCTION_NAME}-role"
+
+          if ! aws lambda get-function --function-name "${FUNCTION_NAME}" >/dev/null 2>&1; then
+            echo "Creating Lambda function ${FUNCTION_NAME}"
+            aws lambda create-function \
+              --function-name "${FUNCTION_NAME}" \
+              --runtime "python${PYTHON_VERSION}" \
+              --role "arn:aws:iam::${AWS_ACCOUNT_ID}:role/${ROLE_NAME}" \
+              --handler lambda_function.lambda_function.lambda_handler \
+              --zip-file fileb://lambda.zip
+
+            echo "Waiting for Lambda function to become active..."
+            aws lambda wait function-active --function-name "${FUNCTION_NAME}"
+          else
+            echo "Lambda function ${FUNCTION_NAME} already exists"
+          fi
+
+      - name: Deploy to Lambda staging alias
+        id: deploy
+        run: |
+          set -euo pipefail
+
+          STAGING_ALIAS="staging"
+
+          # Update Lambda function code and publish a new version
+          VERSION=$(aws lambda update-function-code \
+            --function-name "${FUNCTION_NAME}" \
+            --zip-file fileb://lambda.zip \
+            --publish \
+            --query 'Version' --output text)
+
+          echo "Waiting for Lambda function version ${VERSION} to become active..."
+          aws lambda wait function-updated --function-name "${FUNCTION_NAME}"
+
+          echo "Deployed version: ${VERSION}"
+
+          # Create or update staging alias
+          if ! aws lambda get-alias --function-name "${FUNCTION_NAME}" --name "${STAGING_ALIAS}" >/dev/null 2>&1; then
+            aws lambda create-alias \
+              --function-name "${FUNCTION_NAME}" \
+              --name "${STAGING_ALIAS}" \
+              --function-version "${VERSION}"
+          else
+            aws lambda update-alias \
+              --function-name "${FUNCTION_NAME}" \
+              --name "${STAGING_ALIAS}" \
+              --function-version "${VERSION}"
+          fi
+
+          echo "alias_version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Get staging alias API URL
+        id: get-api-url
+        run: |
+          set -euo pipefail
+          API_NAME="${FUNCTION_NAME}-api-staging"
+
+          # echo "Looking up API named: $API_NAME"
+          # aws apigateway get-rest-apis --query "items[].{id:id,name:name}" --output table
+
+          api_id=$(aws apigateway get-rest-apis \
+            --query "items[?name=='${API_NAME}'].id" \
+            --output text)
+
+          if [ -z "$api_id" ] || [ "$api_id" = "None" ]; then
+            echo "❌ API Gateway for ${API_NAME} does not exist. Please create it first."
+            exit 1
+          fi
+
+          url="https://${api_id}.execute-api.${AWS_REGION}.amazonaws.com"
+
+          echo "✅ Staging API URL: $url"
+          echo "api_url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Run staging E2E tests
+        run: |
+          poetry install
+          poetry run pytest tests/e2e --url "${{ steps.get-api-url.outputs.api_url }}/staging"
+        env:
+          STAGING_API_KEY: ${{ secrets.STAGING_API_KEY }}
+
+  deploy-prod:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: prod-deploy
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
+        uses: abatilo/actions-poetry@v4
+        with:
+          poetry-version: "2.1.4"
+
+      - name: Install deps for packaging
+        run: poetry install --only main
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/${{ env.GH_OIDC_ROLE_NAME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Build Lambda ZIP
+        run: |
+          set -e
+          BUILD_DIR=".package"
+          rm -rf "$BUILD_DIR" lambda.zip
+          mkdir -p "$BUILD_DIR"
+          poetry self add poetry-plugin-export
+          poetry export -f requirements.txt --without-hashes | pip install -r /dev/stdin -t "$BUILD_DIR"
+          cp -r lambda_function/ "$BUILD_DIR"/
+          cd "$BUILD_DIR" && zip -r ../lambda.zip .
+
+      - name: Deploy to Lambda prod alias
+        id: deploy
+        run: |
+          set -euo pipefail
+
+          PROD_ALIAS="prod"
+
+          VERSION=$(aws lambda update-function-code \
+            --function-name "${FUNCTION_NAME}" \
+            --zip-file fileb://lambda.zip \
+            --publish \
+            --query 'Version' --output text)
+
+          echo "Waiting for Lambda function version ${VERSION} to become active..."
+          aws lambda wait function-updated --function-name "${FUNCTION_NAME}"
+
+          echo "Deployed version: ${VERSION}"
+
+          if ! aws lambda get-alias --function-name "${FUNCTION_NAME}" --name "${PROD_ALIAS}" >/dev/null 2>&1; then
+            aws lambda create-alias \
+              --function-name "${FUNCTION_NAME}" \
+              --name "${PROD_ALIAS}" \
+              --function-version "${VERSION}"
+          else
+            aws lambda update-alias \
+              --function-name "${FUNCTION_NAME}" \
+              --name "${PROD_ALIAS}" \
+              --function-version "${VERSION}"
+          fi
+
+          echo "alias_version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Get prod alias API URL
+        id: get-api-url
+        run: |
+          set -euo pipefail
+          API_NAME="${FUNCTION_NAME}-api-prod"
+
+          api_id=$(aws apigateway get-rest-apis \
+            --query "items[?name=='${API_NAME}'].id" \
+            --output text)
+
+          if [ -z "$api_id" ] || [ "$api_id" = "None" ]; then
+            echo "❌ API Gateway for ${API_NAME} does not exist. Please create it first."
+            exit 1
+          fi
+
+          url="https://${api_id}.execute-api.${AWS_REGION}.amazonaws.com"
+
+          echo "✅ Prod API URL: $url"
+          echo "api_url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Run prod E2E tests
+        run: |
+          poetry install
+          poetry run pytest tests/e2e --url "${{ steps.get-api-url.outputs.api_url }}/prod"
+        env:
+          PROD_API_KEY: ${{ secrets.PROD_API_KEY }}

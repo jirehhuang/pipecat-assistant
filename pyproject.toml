@@ -1,0 +1,94 @@
+[project]
+name = "python-lambda-template"
+version = "0.1.0"
+description = "Python AWS Lambda template"
+authors = [
+    {name="Jireh Huang", email="ijirehhuang@gmail.com"},
+]
+readme = "README.md"
+packages = [{ include = "lambda_function" }]
+requires-python = ">=3.12, <4.0"
+dependencies = [
+    "requests>=2.32.5,<3.0.0",
+    "types-requests>=2.32.4.20250809,<3.0.0.0",
+    "ask-sdk-core>=1.19.0,<2.0.0",
+    "uuid6>=2025.0.1",
+    "numpy>=2.3.2,<3.0.0",
+]
+
+[tool.poetry]
+packages = [{ include = "lambda_function" }]
+
+[tool.poetry.group.dev.dependencies]
+black = "^25.1.0"
+ruff = "^0.14.0"
+flake8 = "^7.1.0"
+mypy = "^1.8.0"
+pylint = "^4.0.0"
+pytest = "^8.2.0"
+pytest-cov = "^7.0.0"
+pytest-randomly = "^4.0.1"
+commitizen = "^4.8.3"
+pre-commit = "^4.3.0"
+python-dotenv = "^1.1.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+# -------------------
+# Tool Configurations
+# -------------------
+
+[tool.black]
+line-length = 79
+target-version = ["py312"]
+
+[tool.ruff]
+line-length = 79
+target-version = "py312"
+fix = true
+
+[tool.ruff.lint]
+select = ["B", "D", "E", "ERA", "F", "I", "N", "PL", "RUF", "W"]
+ignore = []
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = [
+    "D205",  # missing-blank-line-after-summary
+    "D209"  # new-line-after-last-paragraph
+]
+"lambda_function/alexa.py" = ["D102"]  # undocumented-public-method
+"__init__.py" = ["F401"]  # unused-import
+
+[tool.flake8]
+max-line-length = 79
+extend-ignore = ["E203", "W503"]
+
+[tool.mypy]
+python_version = "3.12"
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[tool.pylint.'MESSAGES CONTROL']
+disable = ["C0114", "C0115", "C0116"]  # allow missing docstrings in tests
+max-line-length = 79
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+version = "0.1.0"
+tag_format = "v$version"
+update_changelog_on_bump = true
+
+[tool.pytest.ini_options]
+addopts = "-v --cov=lambda_function --cov-report=term-missing --cov-report=xml:coverage.xml"
+testpaths = ["tests"]
+markers = [
+    "e2e: mark a test as end-to-end (skipped unless --url is provided)"
+]
+
+[tool.coverage.run]
+omit = ["tests/*"]

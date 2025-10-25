@@ -1,7 +1,7 @@
 version: 2
 updates:
   - package-ecosystem: "pip"  # Documentation specifies pip for poetry
-    directory: "/"  # Location of pyproject.toml
+    directory: "/server/"  # Location of pyproject.toml
     schedule:
       interval: "weekly"  # Check for updates once a week
   - package-ecosystem: "github-actions"

@@ -9,20 +9,13 @@ from dotenv import load_dotenv
 from loguru import logger
 from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.frames.frames import (
-    Frame,
-    InputAudioRawFrame,
-    InterruptionFrame,
     LLMRunFrame,
-    StartFrame,
-    UserStartedSpeakingFrame,
 )
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
-from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
 from pipecat.processors.frameworks.rtvi import (
-    RTVIClientMessageFrame,
     RTVIConfig,
     RTVIObserver,
     RTVIProcessor,
@@ -54,52 +47,6 @@ transport_params = {
 }
 
 
-class PushToTalkGate(FrameProcessor):
-    """Frame processor that implements push-to-talk functionality."""
-
-    def __init__(self):
-        super().__init__()
-        self._gate_opened = False
-
-    async def process_frame(self, frame: Frame, direction: FrameDirection):
-        """Process a frame, implementing push-to-talk logic."""
-        await super().process_frame(frame, direction)
-
-        if isinstance(frame, StartFrame):
-            await self.push_frame(frame, direction)
-
-        elif isinstance(frame, RTVIClientMessageFrame):
-            self._handle_rtvi_frame(frame)
-            await self.push_frame(frame, direction)
-
-        # If the gate is closed, suppress all audio frames until the user
-        # releases the button. We don't include the UserStoppedSpeakingFrame
-        # because it's an important signal to tell the UserContextAggregator
-        # that the user is done speaking and to push the aggregation.
-        if not self._gate_opened and isinstance(
-            frame,
-            (
-                InputAudioRawFrame,
-                UserStartedSpeakingFrame,
-                InterruptionFrame,
-            ),
-        ):
-            msg = f"{frame.__class__.__name__} suppressed - Button not pressed"
-            logger.trace(msg)
-        else:
-            await self.push_frame(frame, direction)
-
-    def _handle_rtvi_frame(self, frame: RTVIClientMessageFrame):
-        if frame.type == "push_to_talk" and frame.data:
-            data = frame.data
-            if data.get("state") == "start":
-                self._gate_opened = True
-                logger.info("Input gate opened - user started talking")
-            elif data.get("state") == "stop":
-                self._gate_opened = False
-                logger.info("Input gate closed - user stopped talking")
-
-
 # pylint: disable=too-many-locals
 async def create_bot_pipeline(
     session: aiohttp.ClientSession,
@@ -122,8 +69,6 @@ async def create_bot_pipeline(
         model="openai/gpt-4o-mini",
     )
 
-    push_to_talk_gate = PushToTalkGate()
-
     rtvi = RTVIProcessor(config=RTVIConfig(config=[]))
 
     messages = [
@@ -145,7 +90,6 @@ async def create_bot_pipeline(
         [
             transport.input(),  # Transport user input
             rtvi,
-            push_to_talk_gate,
             stt,
             context_aggregator.user(),  # User responses
             llm,  # LLM

@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Push-to-Talk Voice AI Agent',
+  title: 'Voice AI Agent',
   icons: {
     icon: '/favicon.svg',
   },

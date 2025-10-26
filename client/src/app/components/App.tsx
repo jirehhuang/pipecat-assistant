@@ -19,49 +19,6 @@ export interface AppProps {
   error?: string | null;
 }
 
-export type PushToTalkState = 'idle' | 'talking';
-
-const PushToTalkButton = () => {
-  const client = usePipecatClient();
-  const [pushToTalkState, setPushToTalkState] =
-    useState<PushToTalkState>('idle');
-
-  const handlePushToTalk = useCallback(() => {
-    if (!client || client.state !== 'ready') {
-      return;
-    }
-
-    if (pushToTalkState === 'idle') {
-      // Start talking
-      setPushToTalkState('talking');
-      client.sendClientMessage('push_to_talk', { state: 'start' });
-    } else {
-      // Stop talking
-      setPushToTalkState('idle');
-      client.sendClientMessage('push_to_talk', { state: 'stop' });
-    }
-  }, [client, pushToTalkState]);
-
-  const isReady = client && client.state === 'ready';
-
-  return (
-    <Button
-      size="xl"
-      variant={pushToTalkState === 'talking' ? 'destructive' : 'primary'}
-      disabled={!isReady}
-      onMouseDown={handlePushToTalk}
-      onMouseUp={handlePushToTalk}
-      onTouchStart={handlePushToTalk}
-      onTouchEnd={handlePushToTalk}
-      className={`transition-all duration-200 select-none ${
-        pushToTalkState === 'talking' ? 'scale-105' : ''
-      } flex items-center gap-2`}>
-      <MicIcon size={20} />
-      {pushToTalkState === 'talking' ? 'Release to Send' : 'Hold to Talk'}
-    </Button>
-  );
-};
-
 export const App = ({ handleConnect, handleDisconnect, error }: AppProps) => {
   const { isConnected } = usePipecatConnectionState();
 
@@ -89,9 +46,6 @@ export const App = ({ handleConnect, handleDisconnect, error }: AppProps) => {
             </div>
             {isConnected && (
               <>
-                <div className="absolute bottom-32 left-1/2 transform -translate-x-1/2 z-20">
-                  <PushToTalkButton />
-                </div>
                 <ControlBar>
                   <UserAudioControl />
                   <Button

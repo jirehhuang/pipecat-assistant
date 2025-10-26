@@ -1,6 +1,6 @@
-agent_name = "push-to-talk"
-image = "your_username/push-to-talk:0.1"
-secret_set = "push-to-talk-secrets"
+agent_name = "pipecat-assistant"
+image = "jirehhuang/pipecat-assistant:0.1"
+secret_set = "pipecat-assistant-secrets"
 
 [scaling]
 	min_agents = 1

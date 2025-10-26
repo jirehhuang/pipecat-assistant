@@ -117,7 +117,10 @@ async def create_bot_pipeline(
         sample_rate=24000,
     )
 
-    llm = OpenRouterLLMService(api_key=os.getenv("OPENROUTER_API_KEY", ""))
+    llm = OpenRouterLLMService(
+        api_key=os.getenv("OPENROUTER_API_KEY", ""),
+        model="openai/gpt-4o-mini",
+    )
 
     push_to_talk_gate = PushToTalkGate()
 

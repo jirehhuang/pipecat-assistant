@@ -30,7 +30,7 @@ from pipecat.runner.types import RunnerArguments
 from pipecat.runner.utils import create_transport
 from pipecat.services.cartesia.tts import CartesiaTTSService
 from pipecat.services.deepgram.stt import DeepgramSTTService
-from pipecat.services.openai.llm import OpenAILLMService
+from pipecat.services.openrouter.llm import OpenRouterLLMService
 from pipecat.transports.base_transport import BaseTransport, TransportParams
 from pipecat.transports.daily.transport import DailyParams
 
@@ -111,7 +111,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
         voice_id="71a7ad14-091c-4e8e-a314-022ece01c121",
     )
 
-    llm = OpenAILLMService(api_key=os.getenv("OPENAI_API_KEY", ""))
+    llm = OpenRouterLLMService(api_key=os.getenv("OPENROUTER_API_KEY", ""))
 
     push_to_talk_gate = PushToTalkGate()
 

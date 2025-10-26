@@ -83,9 +83,8 @@ class PushToTalkGate(FrameProcessor):
                 InterruptionFrame,
             ),
         ):
-            logger.trace(
-                f"{frame.__class__.__name__} suppressed - Button not pressed"
-            )
+            msg = f"{frame.__class__.__name__} suppressed - Button not pressed"
+            logger.trace(msg)
         else:
             await self.push_frame(frame, direction)
 

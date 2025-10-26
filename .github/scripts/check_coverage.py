@@ -42,7 +42,8 @@ def main() -> None:
 
     if not args.file.is_file():
         print(
-            f"ERROR: Coverage file '{args.file}' not found.", file=sys.stderr
+            f"ERROR: Coverage file '{args.file}' not found.",
+            file=sys.stderr,
         )
         sys.exit(1)
 

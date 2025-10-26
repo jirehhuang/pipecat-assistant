@@ -1,8 +1,6 @@
-#
-# Copyright (c) 2024–2025, Daily
-#
-# SPDX-License-Identifier: BSD 2-Clause License
-#
+"""Pipecat assistant bot implementation."""
+
+# pylint: disable=unused-argument
 
 import os
 
@@ -56,11 +54,14 @@ transport_params = {
 
 
 class PushToTalkGate(FrameProcessor):
+    """Frame processor that implements push-to-talk functionality."""
+
     def __init__(self):
         super().__init__()
         self._gate_opened = False
 
     async def process_frame(self, frame: Frame, direction: FrameDirection):
+        """Process a frame, implementing push-to-talk logic."""
         await super().process_frame(frame, direction)
 
         if isinstance(frame, StartFrame):
@@ -70,9 +71,10 @@ class PushToTalkGate(FrameProcessor):
             self._handle_rtvi_frame(frame)
             await self.push_frame(frame, direction)
 
-        # If the gate is closed, suppress all audio frames until the user releases the button
-        # We don't include the UserStoppedSpeakingFrame because it's an important signal to tell
-        # the UserContextAggregator that the user is done speaking and to push the aggregation.
+        # If the gate is closed, suppress all audio frames until the user
+        # releases the button. We don't include the UserStoppedSpeakingFrame
+        # because it's an important signal to tell the UserContextAggregator
+        # that the user is done speaking and to push the aggregation.
         if not self._gate_opened and isinstance(
             frame,
             (
@@ -81,7 +83,9 @@ class PushToTalkGate(FrameProcessor):
                 InterruptionFrame,
             ),
         ):
-            logger.trace(f"{frame.__class__.__name__} suppressed - Button not pressed")
+            logger.trace(
+                f"{frame.__class__.__name__} suppressed - Button not pressed"
+            )
         else:
             await self.push_frame(frame, direction)
 
@@ -97,16 +101,18 @@ class PushToTalkGate(FrameProcessor):
 
 
 async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
-    logger.info(f"Starting bot")
+    """Run the Pipecat assistant bot."""
+    logger.info("Starting bot")
 
-    stt = DeepgramSTTService(api_key=os.getenv("DEEPGRAM_API_KEY"))
+    stt = DeepgramSTTService(api_key=os.getenv("DEEPGRAM_API_KEY", ""))
 
     tts = CartesiaTTSService(
-        api_key=os.getenv("CARTESIA_API_KEY"),
-        voice_id="71a7ad14-091c-4e8e-a314-022ece01c121",  # British Reading Lady
+        api_key=os.getenv("CARTESIA_API_KEY", ""),
+        # British Reading Lady
+        voice_id="71a7ad14-091c-4e8e-a314-022ece01c121",
     )
 
-    llm = OpenAILLMService(api_key=os.getenv("OPENAI_API_KEY"))
+    llm = OpenAILLMService(api_key=os.getenv("OPENAI_API_KEY", ""))
 
     push_to_talk_gate = PushToTalkGate()
 
@@ -115,11 +121,16 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
     messages = [
         {
             "role": "system",
-            "content": "You are a helpful assistant. Your output will be converted to audio so don't include special characters in your answers. Respond to what the user said in a creative and helpful way.",
+            "content": (
+                "You are a helpful assistant. Your output will be converted "
+                "to audio so don't include special characters in your "
+                "answers. Respond to what the user said in a creative and "
+                "helpful way.",
+            ),
         },
     ]
 
-    context = OpenAILLMContext(messages)
+    context = OpenAILLMContext(messages)  # type: ignore
     context_aggregator = llm.create_context_aggregator(context)
 
     pipeline = Pipeline(
@@ -147,14 +158,19 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
 
     @transport.event_handler("on_client_connected")
     async def on_client_connected(transport, client):
-        logger.info(f"Client connected")
+        logger.info("Client connected")
         # Kick off the conversation.
-        messages.append({"role": "system", "content": "Please introduce yourself to the user."})
+        messages.append(
+            {
+                "role": "system",
+                "content": "Please introduce yourself to the user.",
+            }
+        )
         await task.queue_frames([LLMRunFrame()])
 
     @transport.event_handler("on_client_disconnected")
     async def on_client_disconnected(transport, client):
-        logger.info(f"Client disconnected")
+        logger.info("Client disconnected")
         await task.cancel()
 
     runner = PipelineRunner(handle_sigint=runner_args.handle_sigint)
@@ -163,7 +179,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
 
 
 async def bot(runner_args: RunnerArguments):
-    """Main bot entry point compatible with Pipecat Cloud."""
+    """Run main bot entry point compatible with Pipecat Cloud."""
     transport = await create_transport(runner_args, transport_params)
     await run_bot(transport, runner_args)
 

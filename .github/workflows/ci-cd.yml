@@ -43,10 +43,14 @@ jobs:
           poetry-version: "2.1.4"
 
       - name: Install dependencies
-        run: poetry install
+        run: |
+          cd server
+          poetry install
 
       - name: Run pre-commit
-        run: poetry run pre-commit run --all-files
+        run: |
+          cd server
+          poetry run pre-commit run --all-files
 
       - name: Run pylint
         run: |

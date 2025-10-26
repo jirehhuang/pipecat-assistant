@@ -1,0 +1,6 @@
+agent_name = "pipecat-assistant"
+image = "jirehhuang/pipecat-assistant:0.1"
+secret_set = "pipecat-assistant-secrets"
+
+[scaling]
+	min_agents = 1

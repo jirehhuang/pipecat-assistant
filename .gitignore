@@ -21,7 +21,7 @@ poetry.lock
 .venv/
 
 # AWS Lambda build artifacts
-package/
+# package/  # Disabled for /voice-ui-kit/package
 function.zip
 
 # PyInstaller
@@ -70,3 +70,37 @@ tmp/
 
 # Secrets
 .env
+
+#----------------------------------------------------------------------
+# https://github.com/pipecat-ai/voice-ui-kit/blob/main/.gitignore
+#----------------------------------------------------------------------
+
+dist
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+.env
+stats.html

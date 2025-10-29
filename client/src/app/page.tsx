@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  ConsoleTemplate,
   FullScreenContainer,
   ThemeProvider,
   PipecatAppBase,
@@ -13,28 +14,13 @@ export default function Home() {
   return (
     <ThemeProvider>
       <FullScreenContainer>
-        <PipecatAppBase
+        <ConsoleTemplate
           transportType="daily"
           connectParams={{
-            endpoint: '/api/connect',
-          }}>
-          {({
-            client,
-            handleConnect,
-            handleDisconnect,
-            error,
-          }: PipecatBaseChildProps) =>
-            !client ? (
-              <SpinLoader />
-            ) : (
-              <App
-                handleConnect={handleConnect}
-                handleDisconnect={handleDisconnect}
-                error={error}
-              />
-            )
-          }
-        </PipecatAppBase>
+            endpoint: "/api/connect",
+          }}
+          noUserVideo
+        />
       </FullScreenContainer>
     </ThemeProvider>
   );

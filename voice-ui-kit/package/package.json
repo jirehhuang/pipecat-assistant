@@ -80,7 +80,8 @@
     }
   },
   "scripts": {
-    "build": "tsup",
+    "build": "npm run build:js && npm run build:css",
+    "build:js": "tsup",
     "build:watch": "tsup --watch",
     "build:css": "node ../scripts/build-css.js",
     "build:themes": "echo 'Themes are now built automatically with build:css'",
@@ -114,6 +115,7 @@
     "@pipecat-ai/client-react": "^1.1.0",
     "@pipecat-ai/daily-transport": "^1.4.0",
     "@pipecat-ai/small-webrtc-transport": "^1.5.0",
+    "@tailwindcss/postcss": "^4.1.13",
     "@tailwindcss/vite": "^4.1.13",
     "@types/node": "^22.18.8",
     "@types/react": "^19.1.16",
@@ -126,6 +128,8 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.22",
     "globals": "^16.4.0",
+    "postcss": "^8.5.0",
+    "postcss-prefix-selector": "^1.16.1",
     "prettier": "^3.6.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

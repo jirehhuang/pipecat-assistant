@@ -24,7 +24,6 @@ export default defineConfig({
   sourcemap: true,
   minify: false,
   outDir: "dist",
-  onSuccess: "npm run build:css",
   esbuildOptions(options) {
     options.loader = {
       ...options.loader,

@@ -10,7 +10,6 @@ import {
 } from '@pipecat-ai/voice-ui-kit';
 import { PlasmaVisualizer } from '@pipecat-ai/voice-ui-kit/webgl';
 import { LogOutIcon, XIcon, MicIcon } from 'lucide-react';
-import { usePipecatClient } from '@pipecat-ai/client-react';
 import { useCallback, useState } from 'react';
 
 export interface AppProps {

@@ -44,6 +44,7 @@ import {
   usePipecatClient,
   usePipecatClientCamControl,
   useRTVIClientEvent,
+  PipecatClientMicToggle,
 } from "@pipecat-ai/client-react";
 import {
   BotIcon,
@@ -52,6 +53,7 @@ import {
   InfoIcon,
   MessagesSquareIcon,
   MicIcon,
+  MicOffIcon,
   PanelLeftCloseIcon,
   PanelRightCloseIcon,
 } from "lucide-react";
@@ -448,14 +450,32 @@ const ConsoleUI = ({
                           }}
                         />
                       </div>
-                      <div className="pt-2">
-                        <TextInputComponent 
-                          placeholder="Type a message..."
-                          size="md"
-                          multiline={true}
-                          onSend={handleTextInputSend}
-                          disabled={!isConnected}
-                        />
+                      <div className="pt-2 flex gap-2 items-start">
+                        {!noUserAudio && (
+                          <PipecatClientMicToggle>
+                            {({ isMicEnabled, onClick }) => (
+                              <Button
+                                onClick={onClick}
+                                variant="outline"
+                                size="md"
+                                isIcon
+                                state={isMicEnabled ? "default" : "inactive"}
+                                className="shrink-0"
+                              >
+                                {isMicEnabled ? <MicIcon /> : <MicOffIcon />}
+                              </Button>
+                            )}
+                          </PipecatClientMicToggle>
+                        )}
+                        <div className="flex-1">
+                          <TextInputComponent 
+                            placeholder="Type a message..."
+                            size="md"
+                            multiline={true}
+                            onSend={handleTextInputSend}
+                            disabled={!isConnected}
+                          />
+                        </div>
                       </div>
                     </ResizablePanel>
                     {!noInfoPanel && <ResizableHandle withHandle />}
@@ -578,14 +598,32 @@ const ConsoleUI = ({
                     noMetrics={noMetrics}
                   />
                 </div>
-                <div className="p-2">
-                  <TextInputComponent 
-                    placeholder="Type a message..."
-                    size="md"
-                    multiline={true}
-                    onSend={handleTextInputSend}
-                    disabled={!isConnected}
-                  />
+                <div className="p-2 flex gap-2 items-start">
+                  {!noUserAudio && (
+                    <PipecatClientMicToggle>
+                      {({ isMicEnabled, onClick }) => (
+                        <Button
+                          onClick={onClick}
+                          variant="outline"
+                          size="md"
+                          isIcon
+                          state={isMicEnabled ? "default" : "inactive"}
+                          className="shrink-0"
+                        >
+                          {isMicEnabled ? <MicIcon /> : <MicOffIcon />}
+                        </Button>
+                      )}
+                    </PipecatClientMicToggle>
+                  )}
+                  <div className="flex-1">
+                    <TextInputComponent 
+                      placeholder="Type a message..."
+                      size="md"
+                      multiline={true}
+                      onSend={handleTextInputSend}
+                      disabled={!isConnected}
+                    />
+                  </div>
                 </div>
               </TabsContent>
             )}

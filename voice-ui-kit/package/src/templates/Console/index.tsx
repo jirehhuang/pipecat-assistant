@@ -5,6 +5,7 @@ import ConnectButton from "@/components/elements/ConnectButton";
 import type { ConversationProps } from "@/components/elements/Conversation";
 import PipecatLogo from "@/components/elements/PipecatLogo";
 import { SessionInfo } from "@/components/elements/SessionInfo";
+import { TextInputComponent } from "@/components/elements/TextInput";
 import UserAudioControl from "@/components/elements/UserAudioControl";
 import UserAudioOutputControl from "@/components/elements/UserAudioOutputControl";
 import UserVideoControl from "@/components/elements/UserVideoControl";
@@ -35,10 +36,12 @@ import {
 } from "@/components/ui/resizable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePipecatConversation } from "@/hooks/usePipecatConversation";
+import { usePipecatConnectionState } from "@/hooks/usePipecatConnectionState";
 import { cn } from "@/lib/utils";
 import { type ConversationMessage } from "@/types/conversation";
 import { type PipecatClientOptions, RTVIEvent } from "@pipecat-ai/client-js";
 import {
+  usePipecatClient,
   usePipecatClientCamControl,
   useRTVIClientEvent,
 } from "@pipecat-ai/client-react";
@@ -53,7 +56,7 @@ import {
   PanelRightCloseIcon,
 } from "lucide-react";
 import { type ImperativePanelHandle } from "react-resizable-panels";
-import React, { memo, useEffect, useRef, useState } from "react";
+import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 import { AutoInitDevices } from "./AutoInitDevices";
 import { SmallWebRTCCodecSetter } from "./SmallWebRTCCodecSetter";
 import UserScreenControl from "../../components/elements/UserScreenControl";
@@ -277,6 +280,29 @@ const ConsoleUI = ({
 
   const { injectMessage } = usePipecatConversation();
   const { isCamEnabled } = usePipecatClientCamControl();
+  const { isConnected } = usePipecatConnectionState();
+  const client = usePipecatClient();
+
+  // Custom handler for text input that adds message to conversation and sends to bot
+  const handleTextInputSend = useCallback(
+    async (message: string) => {
+      if (!isConnected || !client) return;
+
+      // Add message to conversation UI immediately
+      injectMessage({
+        role: "user",
+        parts: [{ text: message, final: true, createdAt: String(Date.now()) }],
+      });
+
+      // Send message to bot with interruption
+      await client.appendToContext({
+        role: "user",
+        content: message,
+        run_immediately: true,
+      });
+    },
+    [isConnected, client, injectMessage],
+  );
 
   // Expose injectMessage to parent if requested
   useEffect(() => {
@@ -406,20 +432,31 @@ const ConsoleUI = ({
                 {!noConversationPanel && (
                   <>
                     <ResizablePanel
-                      className="h-full p-2"
+                      className="h-full p-2 flex flex-col"
                       defaultSize={collapseInfoPanel ? 70 : 47}
                       minSize={30}
                     >
-                      <ConversationPanel
-                        noConversation={noConversation}
-                        noMetrics={noMetrics}
-                        conversationElementProps={{
-                          ...conversationElementProps,
-                          assistantLabel: assistantLabelText,
-                          clientLabel: userLabelText,
-                          systemLabel: systemLabelText,
-                        }}
-                      />
+                      <div className="flex-1 overflow-auto">
+                        <ConversationPanel
+                          noConversation={noConversation}
+                          noMetrics={noMetrics}
+                          conversationElementProps={{
+                            ...conversationElementProps,
+                            assistantLabel: assistantLabelText,
+                            clientLabel: userLabelText,
+                            systemLabel: systemLabelText,
+                          }}
+                        />
+                      </div>
+                      <div className="pt-2">
+                        <TextInputComponent 
+                          placeholder="Type a message..."
+                          size="md"
+                          multiline={true}
+                          onSend={handleTextInputSend}
+                          disabled={!isConnected}
+                        />
+                      </div>
                     </ResizablePanel>
                     {!noInfoPanel && <ResizableHandle withHandle />}
                   </>
@@ -533,12 +570,23 @@ const ConsoleUI = ({
             {!noConversationPanel && (
               <TabsContent
                 value="conversation"
-                className="flex-1 overflow-auto"
+                className="flex-1 overflow-auto flex flex-col"
               >
-                <ConversationPanel
-                  noConversation={noConversation}
-                  noMetrics={noMetrics}
-                />
+                <div className="flex-1 overflow-auto">
+                  <ConversationPanel
+                    noConversation={noConversation}
+                    noMetrics={noMetrics}
+                  />
+                </div>
+                <div className="p-2">
+                  <TextInputComponent 
+                    placeholder="Type a message..."
+                    size="md"
+                    multiline={true}
+                    onSend={handleTextInputSend}
+                    disabled={!isConnected}
+                  />
+                </div>
               </TabsContent>
             )}
             <TabsContent value="info" className="flex-1 overflow-auto p-2">

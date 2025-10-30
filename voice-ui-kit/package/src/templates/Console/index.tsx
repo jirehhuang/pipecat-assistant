@@ -573,7 +573,7 @@ const ConsoleUI = ({
         </div>
         <Tabs
           defaultValue={
-            noBotArea ? (noConversationPanel ? "info" : "conversation") : "bot"
+            noConversationPanel ? (noBotArea ? "info" : "bot") : "conversation"
           }
           className="flex flex-col gap-0 h-full sm:hidden overflow-hidden"
         >

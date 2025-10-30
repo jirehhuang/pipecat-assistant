@@ -43,6 +43,7 @@ export const TextInputComponent = ({
 }: TextInputComponentProps) => {
   const [isSending, setIsSending] = useState(false);
   const [message, setMessage] = useState("");
+  const [justSent, setJustSent] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleSend = useCallback(async () => {
@@ -51,8 +52,22 @@ export const TextInputComponent = ({
     setIsSending(true);
     await onSend?.(message);
     setMessage("");
+    setJustSent(true);
     setIsSending(false);
   }, [message, onSend, isSending]);
+
+  // Refocus after sending
+  useEffect(() => {
+    if (justSent && !isSending) {
+      const textarea = document.querySelector<HTMLTextAreaElement>(
+        'textarea[data-slot="textarea"]'
+      );
+      if (textarea) {
+        textarea.focus();
+      }
+      setJustSent(false);
+    }
+  }, [justSent, isSending]);
 
   useEffect(() => {
     if (!message.trim()) return;

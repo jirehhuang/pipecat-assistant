@@ -20,6 +20,9 @@ export default function Home() {
             endpoint: "/api/connect",
           }}
           noUserVideo
+          collapseMediaPanel={true}
+          collapseInfoPanel={true}
+          collapseEventsPanel={true}
         />
       </FullScreenContainer>
     </ThemeProvider>

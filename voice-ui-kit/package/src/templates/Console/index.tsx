@@ -108,6 +108,8 @@ export interface ConsoleTemplateProps
   collapseInfoPanel?: boolean;
   /** Whether to collapse the media panel by default. Default: false */
   collapseMediaPanel?: boolean;
+  /** Whether to collapse the events panel by default. Default: false */
+  collapseEventsPanel?: boolean;
 
   // Properties from original interface that are still in use but not in the new interface
 
@@ -256,6 +258,7 @@ const ConsoleUI = ({
   // Panel collapse settings
   collapseInfoPanel = false,
   collapseMediaPanel = false,
+  collapseEventsPanel = false,
 
   // Legacy properties
   audioCodec = "default",
@@ -272,9 +275,9 @@ const ConsoleUI = ({
   handleConnect,
   handleDisconnect,
 }: ConsoleUIProps) => {
-  const [isBotAreaCollapsed, setIsBotAreaCollapsed] = useState(false);
-  const [isInfoPanelCollapsed, setIsInfoPanelCollapsed] = useState(false);
-  const [isEventsPanelCollapsed, setIsEventsPanelCollapsed] = useState(false);
+  const [isBotAreaCollapsed, setIsBotAreaCollapsed] = useState(collapseMediaPanel);
+  const [isInfoPanelCollapsed, setIsInfoPanelCollapsed] = useState(collapseInfoPanel);
+  const [isEventsPanelCollapsed, setIsEventsPanelCollapsed] = useState(collapseEventsPanel);
   const [participantId, setParticipantId] = useState("");
   const [sessionId, setSessionId] = useState("");
 
@@ -401,7 +404,7 @@ const ConsoleUI = ({
                   <>
                     <ResizablePanel
                       className="flex flex-col gap-2 p-2 xl:gap-4"
-                      defaultSize={collapseMediaPanel ? 8 : 26}
+                      defaultSize={collapseMediaPanel ? 4 : 26}
                       maxSize={30}
                       minSize={10}
                       collapsible
@@ -563,6 +566,7 @@ const ConsoleUI = ({
             <ResizablePanel
               collapsible
               collapsedSize={4}
+              defaultSize={collapseEventsPanel ? 4 : undefined}
               minSize={7}
               onCollapse={() => setIsEventsPanelCollapsed(true)}
               onExpand={() => setIsEventsPanelCollapsed(false)}

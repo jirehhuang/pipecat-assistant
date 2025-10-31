@@ -56,6 +56,7 @@ class ActiveStartWakeFilter(WakeCheckFilter):
                     # Start in AWAKE state
                     if self._start_awake:
                         p.state = WakeCheckFilter.WakeState.AWAKE
+                        p.wake_timer = self._get_time()  # Initialize
                     self._participant_states[frame.user_id] = p
 
                 # If AWAKE, pass frames through and reset timeout

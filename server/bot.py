@@ -24,6 +24,7 @@ from pipecat.processors.frameworks.rtvi import (
     RTVIObserver,
     RTVIProcessor,
 )
+from pipecat.runner.run import main
 from pipecat.runner.types import RunnerArguments
 from pipecat.runner.utils import create_transport
 from pipecat.services.deepgram.stt import DeepgramSTTService
@@ -32,9 +33,9 @@ from pipecat.services.piper.tts import PiperTTSService
 from pipecat.transports.base_transport import BaseTransport, TransportParams
 from pipecat.transports.daily.transport import DailyParams
 
-load_dotenv(override=True)
+from custom import ActiveStartWakeFilter
 
-WAKE_PHRASES = ["pipecat", "pipe cat", "wake up", "listen up", "I'm back"]
+load_dotenv(override=True)
 
 SLEEP_PHRASES = ["stop", "sleep", "pause", "give me a moment"]
 
@@ -134,10 +135,7 @@ async def create_bot_pipeline(
 
     rtvi = RTVIProcessor(config=RTVIConfig(config=[]))
 
-    wake_filter = WakeCheckFilter(
-        wake_phrases=WAKE_PHRASES,
-        keepalive_timeout=float("inf"),
-    )
+    wake_filter = ActiveStartWakeFilter()
 
     # Resets wake filter to idle when commanded
     sleep_processor = SleepCommandProcessor(wake_filter)
@@ -216,6 +214,4 @@ async def bot(runner_args: RunnerArguments):
 
 
 if __name__ == "__main__":
-    from pipecat.runner.run import main
-
     main()

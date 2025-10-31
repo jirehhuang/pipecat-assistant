@@ -64,7 +64,7 @@ class ActiveStartWakeFilter(WakeCheckFilter):
                         and self._get_time() - p.wake_timer
                         < self._keepalive_timeout
                     ):
-                        logger.debug(f"Wake filter is awake. Pushing {frame}")
+                        logger.info(f"Wake filter is awake. Pushing {frame}")
                         if p.wake_timer != float("inf"):
                             p.wake_timer = self._get_time()
                         await self.push_frame(frame)
@@ -76,7 +76,7 @@ class ActiveStartWakeFilter(WakeCheckFilter):
                 for pattern in self._wake_patterns:
                     match = pattern.search(p.accumulator)
                     if match:
-                        logger.debug(f"Wake phrase triggered: {match.group()}")
+                        logger.info(f"Wake phrase triggered: {match.group()}")
                         p.state = WakeCheckFilter.WakeState.AWAKE
                         p.wake_timer = self._get_time()
                         match_start = match.start()
@@ -84,6 +84,13 @@ class ActiveStartWakeFilter(WakeCheckFilter):
                         p.accumulator = ""
                         await self.push_frame(frame)
                         return
+                # If IDLE and no wake phrase found, don't pass frame through
+                logger.info(
+                    "Wake filter is IDLE - "
+                    f"dropping transcription: {frame.text}"
+                )
+                return
+            # Pass through non-transcription frames
             await self.push_frame(frame, direction)
         except Exception as e:  # pylint: disable=broad-exception-caught
             error_msg = f"Error in wake filter: {e}"

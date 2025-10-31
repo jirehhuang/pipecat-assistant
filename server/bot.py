@@ -75,20 +75,32 @@ class SleepCommandProcessor(FrameProcessor):
                     logger.info(
                         f"Sleep command detected: '{frame.text}' - going idle"
                     )
-                    # Reset the wake filter state for this participant
+                    # Ensure participant state exists in the wake filter
                     # pylint: disable=protected-access
                     participant_state = (
                         self._wake_filter._participant_states.get(
                             frame.user_id
                         )
                     )
-                    if participant_state:
-                        participant_state.state = (
-                            WakeCheckFilter.WakeState.IDLE
+                    if not participant_state:
+                        # Create the participant state if it doesn't exist
+                        participant_state = WakeCheckFilter.ParticipantState(
+                            frame.user_id
                         )
-                        participant_state.wake_timer = 0.0
-                        participant_state.accumulator = ""
-                    # Don't pass this frame through
+                        self._wake_filter._participant_states[
+                            frame.user_id
+                        ] = participant_state
+
+                    # Reset to IDLE state
+                    participant_state.state = WakeCheckFilter.WakeState.IDLE
+                    participant_state.wake_timer = 0.0
+                    participant_state.accumulator = ""
+
+                    logger.info(
+                        "Wake filter state set to IDLE for user "
+                        f"{frame.user_id}"
+                    )
+                    # Don't pass this frame through to prevent LLM response
                     return
 
         await self.push_frame(frame, direction)

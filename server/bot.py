@@ -3,6 +3,7 @@
 # pylint: disable=unused-argument
 
 import os
+import re
 
 import aiohttp
 from dotenv import load_dotenv
@@ -10,12 +11,14 @@ from loguru import logger
 from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.frames.frames import (
     LLMRunFrame,
+    TranscriptionFrame,
 )
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
 from pipecat.processors.filters.wake_check_filter import WakeCheckFilter
+from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
 from pipecat.processors.frameworks.rtvi import (
     RTVIConfig,
     RTVIObserver,
@@ -30,6 +33,65 @@ from pipecat.transports.base_transport import BaseTransport, TransportParams
 from pipecat.transports.daily.transport import DailyParams
 
 load_dotenv(override=True)
+
+WAKE_PHRASES = ["pipecat", "wake up", "listen up", "I'm back"]
+
+SLEEP_PHRASES = ["stop", "sleep", "pause", "give me a moment"]
+
+
+class SleepCommandProcessor(FrameProcessor):
+    """Detect sleep commands and resets the wake filter to idle."""
+
+    def __init__(self, wake_filter: WakeCheckFilter, sleep_phrases=None):
+        """Initialize the sleep command processor.
+
+        Args:
+            wake_filter: Wake filter instance to control.
+            sleep_phrases: List of phrases that trigger sleep mode.
+        """
+        super().__init__()
+        self._wake_filter = wake_filter
+        self._sleep_phrases = sleep_phrases or SLEEP_PHRASES
+        # Compile regex patterns for sleep phrases
+        self._sleep_patterns = []
+        for phrase in self._sleep_phrases:
+            pattern = re.compile(
+                r"\b"
+                + r"\s*".join(re.escape(word) for word in phrase.split())
+                + r"\b",
+                re.IGNORECASE,
+            )
+            self._sleep_patterns.append(pattern)
+
+    async def process_frame(self, frame, direction: FrameDirection):
+        """Process frames and check for sleep commands."""
+        await super().process_frame(frame, direction)
+
+        if isinstance(frame, TranscriptionFrame):
+            # Check if the transcription contains a sleep phrase
+            for pattern in self._sleep_patterns:
+                if pattern.search(frame.text):
+                    logger.info(
+                        f"Sleep command detected: '{frame.text}' - going idle"
+                    )
+                    # Reset the wake filter state for this participant
+                    # pylint: disable=protected-access
+                    participant_state = (
+                        self._wake_filter._participant_states.get(
+                            frame.user_id
+                        )
+                    )
+                    if participant_state:
+                        participant_state.state = (
+                            WakeCheckFilter.WakeState.IDLE
+                        )
+                        participant_state.wake_timer = 0.0
+                        participant_state.accumulator = ""
+                    # Don't pass this frame through
+                    return
+
+        await self.push_frame(frame, direction)
+
 
 # We store functions so objects (e.g. SileroVADAnalyzer) don't get
 # instantiated. The function will be called when the desired transport gets
@@ -73,9 +135,12 @@ async def create_bot_pipeline(
     rtvi = RTVIProcessor(config=RTVIConfig(config=[]))
 
     wake_filter = WakeCheckFilter(
-        wake_phrases=["pipecat", "wake up", "okay listen", "listen up"],
+        wake_phrases=WAKE_PHRASES,
         keepalive_timeout=5.0,
     )
+
+    # Resets wake filter to idle when commanded
+    sleep_processor = SleepCommandProcessor(wake_filter)
 
     messages = [
         {
@@ -94,15 +159,16 @@ async def create_bot_pipeline(
 
     pipeline = Pipeline(
         [
-            transport.input(),  # Transport user input
+            transport.input(),
             rtvi,
             stt,
             wake_filter,
-            context_aggregator.user(),  # User responses
-            llm,  # LLM
-            tts,  # TTS
-            transport.output(),  # Transport bot output
-            context_aggregator.assistant(),  # Assistant spoken responses
+            sleep_processor,
+            context_aggregator.user(),
+            llm,
+            tts,
+            transport.output(),
+            context_aggregator.assistant(),
         ]
     )
 

@@ -45,9 +45,8 @@ class SleepCommandProcessor(FrameProcessor):
             # Check if the transcription contains a sleep phrase
             for pattern in self._patterns:
                 if pattern.search(frame.text):
-                    logger.info(
-                        f"Sleep command detected: '{frame.text}' - going idle"
-                    )
+                    msg = f"Sleep command detected: '{frame.text}' - idle"
+                    logger.info(msg)
                     # Set participant to IDLE state using public method
                     self._wake_filter.set_participant_idle(frame.user_id)
                     # Don't pass this frame through to prevent LLM response

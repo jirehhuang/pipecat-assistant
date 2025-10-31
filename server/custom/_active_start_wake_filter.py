@@ -60,13 +60,12 @@ class ActiveStartWakeFilter(WakeCheckFilter):
 
                 # If AWAKE, pass frames through and reset timeout
                 if p.state == WakeCheckFilter.WakeState.AWAKE:
-                    if self._indefinite_wake or (
+                    wake_time_elapsed = self._get_time() - p.wake_timer
+                    is_within_keepalive = (
                         self._keepalive_timeout > 0
-                        and (
-                            self._get_time() - p.wake_timer
-                            < self._keepalive_timeout
-                        )
-                    ):
+                        and wake_time_elapsed < self._keepalive_timeout
+                    )
+                    if self._indefinite_wake or is_within_keepalive:
                         logger.info(f"Wake filter is awake. Pushing {frame}")
                         if not self._indefinite_wake:
                             p.wake_timer = self._get_time()
@@ -88,10 +87,8 @@ class ActiveStartWakeFilter(WakeCheckFilter):
                         await self.push_frame(frame)
                         return
                 # If IDLE and no wake phrase found, don't pass frame through
-                logger.info(
-                    "Wake filter is IDLE - "
-                    f"dropping transcription: {frame.text}"
-                )
+                msg = f"Wake filter is IDLE - dropping: {frame.text}"
+                logger.info(msg)
                 return
             # Pass through non-transcription frames
             await self.push_frame(frame, direction)

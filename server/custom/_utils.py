@@ -21,11 +21,10 @@ def compile_phrase_patterns(phrases: list[str]) -> list[re.Pattern]:
     """
     patterns = []
     for phrase in phrases:
-        pattern = re.compile(
-            r"\b"
-            + r"\s*".join(re.escape(word) for word in phrase.split())
-            + r"\b",
-            re.IGNORECASE,
-        )
+        # Build pattern that matches phrase with flexible whitespace
+        words = phrase.split()
+        escaped_words = [re.escape(word) for word in words]
+        pattern_str = r"\b" + r"\s*".join(escaped_words) + r"\b"
+        pattern = re.compile(pattern_str, re.IGNORECASE)
         patterns.append(pattern)
     return patterns

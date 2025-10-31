@@ -7,6 +7,9 @@ import os
 import aiohttp
 from dotenv import load_dotenv
 from loguru import logger
+from pipecat.audio.interruptions.min_words_interruption_strategy import (
+    MinWordsInterruptionStrategy,
+)
 from pipecat.audio.turn.smart_turn.local_smart_turn_v3 import (
     LocalSmartTurnAnalyzerV3,
 )
@@ -33,7 +36,11 @@ from pipecat.services.piper.tts import PiperTTSService
 from pipecat.transports.base_transport import BaseTransport, TransportParams
 from pipecat.transports.daily.transport import DailyParams
 
-from custom import ActiveStartWakeFilter, SleepCommandProcessor
+from custom import (
+    ActiveStartWakeFilter,
+    PhraseInterruptionStrategy,
+    SleepCommandProcessor,
+)
 
 load_dotenv(override=True)
 
@@ -121,6 +128,11 @@ async def create_bot_pipeline(
         params=PipelineParams(
             enable_metrics=True,
             enable_usage_metrics=True,
+            allow_interruptions=True,
+            interruption_strategies=[
+                PhraseInterruptionStrategy(),
+                MinWordsInterruptionStrategy(min_words=3),
+            ],
         ),
         observers=[RTVIObserver(rtvi)],
     )

@@ -7,7 +7,14 @@ import os
 import aiohttp
 from dotenv import load_dotenv
 from loguru import logger
+from pipecat.audio.interruptions.min_words_interruption_strategy import (
+    MinWordsInterruptionStrategy,
+)
+from pipecat.audio.turn.smart_turn.local_smart_turn_v3 import (
+    LocalSmartTurnAnalyzerV3,
+)
 from pipecat.audio.vad.silero import SileroVADAnalyzer
+from pipecat.audio.vad.vad_analyzer import VADParams
 from pipecat.frames.frames import (
     LLMRunFrame,
 )
@@ -28,7 +35,14 @@ from pipecat.services.piper.tts import PiperTTSService
 from pipecat.transports.base_transport import BaseTransport, TransportParams
 from pipecat.transports.daily.transport import DailyParams
 
+from custom import (
+    ActiveStartWakeFilter,
+    PhraseInterruptionStrategy,
+    SleepCommandProcessor,
+)
+
 load_dotenv(override=True)
+
 
 # We store functions so objects (e.g. SileroVADAnalyzer) don't get
 # instantiated. The function will be called when the desired transport gets
@@ -37,12 +51,14 @@ transport_params = {
     "daily": lambda: DailyParams(
         audio_in_enabled=True,
         audio_out_enabled=True,
-        vad_analyzer=SileroVADAnalyzer(),
+        vad_analyzer=SileroVADAnalyzer(params=VADParams(stop_secs=0.2)),
+        turn_analyzer=LocalSmartTurnAnalyzerV3(),
     ),
     "webrtc": lambda: TransportParams(
         audio_in_enabled=True,
         audio_out_enabled=True,
-        vad_analyzer=SileroVADAnalyzer(),
+        vad_analyzer=SileroVADAnalyzer(params=VADParams(stop_secs=0.2)),
+        turn_analyzer=LocalSmartTurnAnalyzerV3(),
     ),
 }
 
@@ -71,6 +87,11 @@ async def create_bot_pipeline(
 
     rtvi = RTVIProcessor(config=RTVIConfig(config=[]))
 
+    wake_filter = ActiveStartWakeFilter()
+
+    # Resets wake filter to idle when commanded
+    sleep_processor = SleepCommandProcessor(wake_filter)
+
     messages = [
         {
             "role": "system",
@@ -88,14 +109,16 @@ async def create_bot_pipeline(
 
     pipeline = Pipeline(
         [
-            transport.input(),  # Transport user input
+            transport.input(),
             rtvi,
             stt,
-            context_aggregator.user(),  # User responses
-            llm,  # LLM
-            tts,  # TTS
-            transport.output(),  # Transport bot output
-            context_aggregator.assistant(),  # Assistant spoken responses
+            wake_filter,
+            sleep_processor,
+            context_aggregator.user(),
+            llm,
+            tts,
+            transport.output(),
+            context_aggregator.assistant(),
         ]
     )
 
@@ -104,6 +127,11 @@ async def create_bot_pipeline(
         params=PipelineParams(
             enable_metrics=True,
             enable_usage_metrics=True,
+            allow_interruptions=True,
+            interruption_strategies=[
+                PhraseInterruptionStrategy(),
+                MinWordsInterruptionStrategy(min_words=3),
+            ],
         ),
         observers=[RTVIObserver(rtvi)],
     )
@@ -143,6 +171,7 @@ async def bot(runner_args: RunnerArguments):
 
 
 if __name__ == "__main__":
+    # pylint: disable="ungrouped-imports"
     from pipecat.runner.run import main
 
     main()

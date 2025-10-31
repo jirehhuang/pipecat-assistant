@@ -15,6 +15,7 @@ from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
+from pipecat.processors.filters.wake_check_filter import WakeCheckFilter
 from pipecat.processors.frameworks.rtvi import (
     RTVIConfig,
     RTVIObserver,
@@ -71,6 +72,11 @@ async def create_bot_pipeline(
 
     rtvi = RTVIProcessor(config=RTVIConfig(config=[]))
 
+    wake_filter = WakeCheckFilter(
+        wake_phrases=["pipecat", "wake up", "okay listen", "listen up"],
+        keepalive_timeout=5.0,
+    )
+
     messages = [
         {
             "role": "system",
@@ -91,6 +97,7 @@ async def create_bot_pipeline(
             transport.input(),  # Transport user input
             rtvi,
             stt,
+            wake_filter,
             context_aggregator.user(),  # User responses
             llm,  # LLM
             tts,  # TTS

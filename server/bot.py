@@ -27,7 +27,6 @@ from pipecat.processors.frameworks.rtvi import (
     RTVIObserver,
     RTVIProcessor,
 )
-from pipecat.runner.run import main
 from pipecat.runner.types import RunnerArguments
 from pipecat.runner.utils import create_transport
 from pipecat.services.deepgram.stt import DeepgramSTTService
@@ -172,4 +171,7 @@ async def bot(runner_args: RunnerArguments):
 
 
 if __name__ == "__main__":
+    # pylint: disable="ungrouped-imports"
+    from pipecat.runner.run import main
+
     main()

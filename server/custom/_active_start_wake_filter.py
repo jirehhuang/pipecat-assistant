@@ -1,5 +1,6 @@
 """Custom wake filter that starts in AWAKE state."""
 
+import math
 import time
 
 from loguru import logger
@@ -41,6 +42,7 @@ class ActiveStartWakeFilter(WakeCheckFilter):
 
         super().__init__(wake_phrases, keepalive_timeout)
         self._start_awake = True
+        self._indefinite_wake = math.isinf(keepalive_timeout)
 
     async def process_frame(self, frame, direction):
         """Process frames, starting in AWAKE state for new participants."""
@@ -54,12 +56,11 @@ class ActiveStartWakeFilter(WakeCheckFilter):
                     # Start in AWAKE state
                     if self._start_awake:
                         p.state = WakeCheckFilter.WakeState.AWAKE
-                        p.wake_timer = float("inf")  # Stay awake indefinitely
                     self._participant_states[frame.user_id] = p
 
                 # If AWAKE, pass frames through and reset timeout
                 if p.state == WakeCheckFilter.WakeState.AWAKE:
-                    if p.wake_timer == float("inf") or (
+                    if self._indefinite_wake or (
                         self._keepalive_timeout > 0
                         and (
                             self._get_time() - p.wake_timer
@@ -67,7 +68,7 @@ class ActiveStartWakeFilter(WakeCheckFilter):
                         )
                     ):
                         logger.info(f"Wake filter is awake. Pushing {frame}")
-                        if p.wake_timer != float("inf"):
+                        if not self._indefinite_wake:
                             p.wake_timer = self._get_time()
                         await self.push_frame(frame)
                         return

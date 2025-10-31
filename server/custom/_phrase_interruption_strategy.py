@@ -1,12 +1,11 @@
 """Custom interruption strategy for immediate phrase-based interruptions."""
 
-import re
-
 from pipecat.audio.interruptions.base_interruption_strategy import (
     BaseInterruptionStrategy,
 )
 
 from ._sleep_command_processor import SLEEP_PHRASES
+from ._utils import compile_phrase_patterns
 
 INTERRUPT_PHRASES = [
     "hold on",
@@ -31,18 +30,7 @@ class PhraseInterruptionStrategy(BaseInterruptionStrategy):
 
         self._phrases = phrases
         self._accumulated_text = ""
-
-        # Compile regex patterns for each phrase
-        self._patterns = []
-        for phrase in self._phrases:
-            # pylint: disable=duplicate-code
-            pattern = re.compile(
-                r"\b"
-                + r"\s*".join(re.escape(word) for word in phrase.split())
-                + r"\b",
-                re.IGNORECASE,
-            )
-            self._patterns.append(pattern)
+        self._patterns = compile_phrase_patterns(self._phrases)
 
     async def append_text(self, text: str):
         """Accumulate transcribed text for analysis.

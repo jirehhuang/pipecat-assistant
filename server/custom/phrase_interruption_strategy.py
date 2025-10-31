@@ -35,6 +35,7 @@ class PhraseInterruptionStrategy(BaseInterruptionStrategy):
         # Compile regex patterns for each phrase
         self._patterns = []
         for phrase in self._phrases:
+            # pylint: disable=duplicate-code
             pattern = re.compile(
                 r"\b"
                 + r"\s*".join(re.escape(word) for word in phrase.split())

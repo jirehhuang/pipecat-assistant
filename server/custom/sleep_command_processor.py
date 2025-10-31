@@ -36,6 +36,7 @@ class SleepCommandProcessor(FrameProcessor):
         # Compile regex patterns for sleep phrases
         self._sleep_patterns = []
         for phrase in self._sleep_phrases:
+            # pylint: disable=duplicate-code
             pattern = re.compile(
                 r"\b"
                 + r"\s*".join(re.escape(word) for word in phrase.split())

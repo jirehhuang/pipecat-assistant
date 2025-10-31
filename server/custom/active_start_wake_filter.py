@@ -61,8 +61,10 @@ class ActiveStartWakeFilter(WakeCheckFilter):
                 if p.state == WakeCheckFilter.WakeState.AWAKE:
                     if p.wake_timer == float("inf") or (
                         self._keepalive_timeout > 0
-                        and self._get_time() - p.wake_timer
-                        < self._keepalive_timeout
+                        and (
+                            self._get_time() - p.wake_timer
+                            < self._keepalive_timeout
+                        )
                     ):
                         logger.info(f"Wake filter is awake. Pushing {frame}")
                         if p.wake_timer != float("inf"):

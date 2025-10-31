@@ -57,6 +57,7 @@ class PhraseInterruptionStrategy(BaseInterruptionStrategy):
 
         Returns
         -------
+        bool
             True if any interrupt phrase is found in accumulated text.
         """
         for pattern in self._patterns:

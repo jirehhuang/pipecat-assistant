@@ -16,7 +16,7 @@ def compile_phrase_patterns(phrases: list[str]) -> list[re.Pattern]:
 
     Returns
     -------
-    list
+    list[re.Pattern]
         Compiled regex patterns for each phrase.
     """
     patterns = []

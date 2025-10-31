@@ -105,7 +105,7 @@ class ActiveStartWakeFilter(WakeCheckFilter):
         Parameters
         ----------
         user_id
-            The user ID of the participant to set to IDLE.
+            User ID of the participant to set to IDLE.
         """
         participant_state = self._participant_states.get(user_id)
         if not participant_state:

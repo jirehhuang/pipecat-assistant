@@ -21,8 +21,10 @@ class PhraseInterruptionStrategy(BaseInterruptionStrategy):
     def __init__(self, phrases: list[str] | None = None):
         """Initialize the phrase interruption strategy.
 
-        Args:
-            phrases: List of phrases that trigger immediate interruption.
+        Parameters
+        ----------
+        phrases
+            List of phrases that trigger immediate interruption.
         """
         super().__init__()
         if phrases is None:
@@ -35,8 +37,10 @@ class PhraseInterruptionStrategy(BaseInterruptionStrategy):
     async def append_text(self, text: str):
         """Accumulate transcribed text for analysis.
 
-        Args:
-            text: Transcribed text to add.
+        Parameters
+        ----------
+        text
+            Transcribed text to add.
         """
         self._accumulated_text += f" {text}"
 

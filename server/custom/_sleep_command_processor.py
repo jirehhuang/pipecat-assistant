@@ -22,9 +22,12 @@ class SleepCommandProcessor(FrameProcessor):
     ):
         """Initialize the sleep command processor.
 
-        Args:
-            wake_filter: Wake filter instance to control.
-            sleep_phrases: List of phrases that trigger sleep mode.
+        Parameters
+        ----------
+        wake_filter
+            Wake filter instance to control.
+        phrases
+            List of phrases that trigger sleep mode.
         """
         super().__init__()
         if phrases is None:

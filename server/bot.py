@@ -34,7 +34,7 @@ from pipecat.transports.daily.transport import DailyParams
 
 load_dotenv(override=True)
 
-WAKE_PHRASES = ["pipecat", "wake up", "listen up", "I'm back"]
+WAKE_PHRASES = ["pipecat", "pipe cat", "wake up", "listen up", "I'm back"]
 
 SLEEP_PHRASES = ["stop", "sleep", "pause", "give me a moment"]
 
@@ -136,7 +136,7 @@ async def create_bot_pipeline(
 
     wake_filter = WakeCheckFilter(
         wake_phrases=WAKE_PHRASES,
-        keepalive_timeout=5.0,
+        keepalive_timeout=float("inf"),
     )
 
     # Resets wake filter to idle when commanded

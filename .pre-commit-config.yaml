@@ -4,6 +4,7 @@ repos:
     rev: 24.4.2
     hooks:
       - id: black
+        exclude: ^voice-ui-kit/
 
   # Ruff for linting & autofix
   - repo: https://github.com/astral-sh/ruff-pre-commit
@@ -11,12 +12,14 @@ repos:
     hooks:
       - id: ruff
         args: [--fix]
+        exclude: ^voice-ui-kit/
 
   # Flake8 (extra linting rules beyond Ruff)
   - repo: https://github.com/pycqa/flake8
     rev: 7.1.0
     hooks:
       - id: flake8
+        exclude: ^voice-ui-kit/
 
   # MyPy type checking
   - repo: https://github.com/pre-commit/mirrors-mypy
@@ -25,6 +28,7 @@ repos:
       - id: mypy
         additional_dependencies: []
         language: system
+        exclude: ^voice-ui-kit/
 
   # Local pylint
   - repo: local
@@ -34,16 +38,22 @@ repos:
         entry: pylint
         language: system
         types: [python]
+        exclude: ^voice-ui-kit/
 
   # Pre-commit hooks
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
+        exclude: ^voice-ui-kit/
       - id: end-of-file-fixer
+        exclude: ^voice-ui-kit/
       - id: check-yaml
+        exclude: ^voice-ui-kit/
       - id: check-added-large-files
+        exclude: ^voice-ui-kit/
       - id: mixed-line-ending
+        exclude: ^voice-ui-kit/
 
   # Commitizen for commit message validation
   - repo: https://github.com/commitizen-tools/commitizen

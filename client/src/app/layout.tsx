@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Voice AI Agent',
+  title: 'Pipecat Assistant',
   icons: {
     icon: '/favicon.svg',
   },

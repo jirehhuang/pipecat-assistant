@@ -95,7 +95,7 @@ export interface ConsoleTemplateProps
   /** Disables the status info panel. Default: false */
   noStatusInfo?: boolean;
 
-  /** Title displayed in the header. Default: "Pipecat Playground" */
+  /** Title displayed in the header. Default: "Pipecat Assistant" */
   titleText?: string;
   /** Label for assistant messages. Default: "assistant" */
   assistantLabelText?: string;
@@ -167,7 +167,7 @@ export interface ConsoleTemplateProps
 
   /**
    * @deprecated Use titleText instead
-   * Title displayed in the header. Defaults to "Pipecat Playground".
+   * Title displayed in the header. Defaults to "Pipecat Assistant".
    */
   title?: string;
 }
@@ -250,7 +250,7 @@ const ConsoleUI = ({
   noStatusInfo = false,
 
   // Text labels
-  titleText = "Pipecat Playground",
+  titleText = "Pipecat Assistant",
   assistantLabelText,
   userLabelText,
   systemLabelText,

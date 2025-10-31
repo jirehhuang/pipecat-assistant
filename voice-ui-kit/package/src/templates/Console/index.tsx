@@ -490,7 +490,7 @@ const ConsoleUI = ({
                     ref={infoPanelRef}
                     collapsible
                     collapsedSize={4}
-                    defaultSize={collapseInfoPanel ? 4 : 27}
+                    defaultSize={collapseInfoPanel ? 15 : 27}
                     minSize={15}
                     onCollapse={() => setIsInfoPanelCollapsed(true)}
                     onExpand={() => setIsInfoPanelCollapsed(false)}

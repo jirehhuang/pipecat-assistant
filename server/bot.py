@@ -3,7 +3,6 @@
 # pylint: disable=unused-argument
 
 import os
-import re
 
 import aiohttp
 from dotenv import load_dotenv
@@ -11,14 +10,11 @@ from loguru import logger
 from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.frames.frames import (
     LLMRunFrame,
-    TranscriptionFrame,
 )
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
-from pipecat.processors.filters.wake_check_filter import WakeCheckFilter
-from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
 from pipecat.processors.frameworks.rtvi import (
     RTVIConfig,
     RTVIObserver,
@@ -33,77 +29,9 @@ from pipecat.services.piper.tts import PiperTTSService
 from pipecat.transports.base_transport import BaseTransport, TransportParams
 from pipecat.transports.daily.transport import DailyParams
 
-from custom import ActiveStartWakeFilter
+from custom import ActiveStartWakeFilter, SleepCommandProcessor
 
 load_dotenv(override=True)
-
-SLEEP_PHRASES = ["stop", "sleep", "pause", "give me a moment"]
-
-
-class SleepCommandProcessor(FrameProcessor):
-    """Detect sleep commands and resets the wake filter to idle."""
-
-    def __init__(self, wake_filter: WakeCheckFilter, sleep_phrases=None):
-        """Initialize the sleep command processor.
-
-        Args:
-            wake_filter: Wake filter instance to control.
-            sleep_phrases: List of phrases that trigger sleep mode.
-        """
-        super().__init__()
-        self._wake_filter = wake_filter
-        self._sleep_phrases = sleep_phrases or SLEEP_PHRASES
-        # Compile regex patterns for sleep phrases
-        self._sleep_patterns = []
-        for phrase in self._sleep_phrases:
-            pattern = re.compile(
-                r"\b"
-                + r"\s*".join(re.escape(word) for word in phrase.split())
-                + r"\b",
-                re.IGNORECASE,
-            )
-            self._sleep_patterns.append(pattern)
-
-    async def process_frame(self, frame, direction: FrameDirection):
-        """Process frames and check for sleep commands."""
-        await super().process_frame(frame, direction)
-
-        if isinstance(frame, TranscriptionFrame):
-            # Check if the transcription contains a sleep phrase
-            for pattern in self._sleep_patterns:
-                if pattern.search(frame.text):
-                    logger.info(
-                        f"Sleep command detected: '{frame.text}' - going idle"
-                    )
-                    # Ensure participant state exists in the wake filter
-                    # pylint: disable=protected-access
-                    participant_state = (
-                        self._wake_filter._participant_states.get(
-                            frame.user_id
-                        )
-                    )
-                    if not participant_state:
-                        # Create the participant state if it doesn't exist
-                        participant_state = WakeCheckFilter.ParticipantState(
-                            frame.user_id
-                        )
-                        self._wake_filter._participant_states[
-                            frame.user_id
-                        ] = participant_state
-
-                    # Reset to IDLE state
-                    participant_state.state = WakeCheckFilter.WakeState.IDLE
-                    participant_state.wake_timer = 0.0
-                    participant_state.accumulator = ""
-
-                    logger.info(
-                        "Wake filter state set to IDLE for user "
-                        f"{frame.user_id}"
-                    )
-                    # Don't pass this frame through to prevent LLM response
-                    return
-
-        await self.push_frame(frame, direction)
 
 
 # We store functions so objects (e.g. SileroVADAnalyzer) don't get

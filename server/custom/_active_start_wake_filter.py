@@ -99,6 +99,25 @@ class ActiveStartWakeFilter(WakeCheckFilter):
             error_msg = f"Error in wake filter: {e}"
             logger.exception(error_msg)
 
+    def set_participant_idle(self, user_id: str) -> None:
+        """Set a participant to IDLE state.
+
+        Parameters
+        ----------
+        user_id
+            The user ID of the participant to set to IDLE.
+        """
+        participant_state = self._participant_states.get(user_id)
+        if not participant_state:
+            # Create the participant state if it doesn't exist
+            participant_state = WakeCheckFilter.ParticipantState(user_id)
+            self._participant_states[user_id] = participant_state
+
+        participant_state.state = WakeCheckFilter.WakeState.IDLE
+        participant_state.wake_timer = 0.0
+        participant_state.accumulator = ""
+        logger.info(f"Wake filter state set to IDLE for user {user_id}")
+
     def _get_time(self):
         """Get current time for wake timer tracking."""
         return time.time()

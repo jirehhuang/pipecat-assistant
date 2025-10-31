@@ -6,8 +6,9 @@ from loguru import logger
 from pipecat.frames.frames import (
     TranscriptionFrame,
 )
-from pipecat.processors.filters.wake_check_filter import WakeCheckFilter
 from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
+
+from ._active_start_wake_filter import ActiveStartWakeFilter
 
 SLEEP_PHRASES = ["stop", "sleep", "pause", "give me a moment"]
 
@@ -17,7 +18,7 @@ class SleepCommandProcessor(FrameProcessor):
 
     def __init__(
         self,
-        wake_filter: WakeCheckFilter,
+        wake_filter: ActiveStartWakeFilter,
         sleep_phrases: list[str] | None = None,
     ):
         """Initialize the sleep command processor.
@@ -56,31 +57,8 @@ class SleepCommandProcessor(FrameProcessor):
                     logger.info(
                         f"Sleep command detected: '{frame.text}' - going idle"
                     )
-                    # Ensure participant state exists in the wake filter
-                    # pylint: disable=protected-access
-                    participant_state = (
-                        self._wake_filter._participant_states.get(
-                            frame.user_id
-                        )
-                    )
-                    if not participant_state:
-                        # Create the participant state if it doesn't exist
-                        participant_state = WakeCheckFilter.ParticipantState(
-                            frame.user_id
-                        )
-                        self._wake_filter._participant_states[
-                            frame.user_id
-                        ] = participant_state
-
-                    # Reset to IDLE state
-                    participant_state.state = WakeCheckFilter.WakeState.IDLE
-                    participant_state.wake_timer = 0.0
-                    participant_state.accumulator = ""
-
-                    logger.info(
-                        "Wake filter state set to IDLE for user "
-                        f"{frame.user_id}"
-                    )
+                    # Set participant to IDLE state using public method
+                    self._wake_filter.set_participant_idle(frame.user_id)
                     # Don't pass this frame through to prevent LLM response
                     return
 

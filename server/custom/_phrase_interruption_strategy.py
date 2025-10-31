@@ -6,7 +6,7 @@ from pipecat.audio.interruptions.base_interruption_strategy import (
     BaseInterruptionStrategy,
 )
 
-from .sleep_command_processor import SLEEP_PHRASES
+from ._sleep_command_processor import SLEEP_PHRASES
 
 INTERRUPT_PHRASES = [
     "hold on",

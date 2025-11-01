@@ -6,7 +6,6 @@ import os
 
 import aiohttp
 from dotenv import load_dotenv
-from jhutils.agent import AssistantFactory
 from loguru import logger
 from pipecat.adapters.schemas.function_schema import FunctionSchema
 from pipecat.adapters.schemas.tools_schema import ToolsSchema
@@ -33,7 +32,6 @@ from pipecat.processors.frameworks.rtvi import (
 from pipecat.runner.types import RunnerArguments
 from pipecat.runner.utils import create_transport
 from pipecat.services.deepgram.stt import DeepgramSTTService
-from pipecat.services.llm_service import FunctionCallParams
 from pipecat.services.openrouter.llm import OpenRouterLLMService
 from pipecat.services.piper.tts import PiperTTSService
 from pipecat.transports.base_transport import BaseTransport, TransportParams
@@ -44,11 +42,9 @@ from custom import (
     PhraseInterruptionStrategy,
     SleepCommandProcessor,
 )
+from custom._functions import handle_delegate_to_assistant
 
 load_dotenv(override=True)
-
-
-_factory = AssistantFactory()
 
 
 # We store functions so objects (e.g. SileroVADAnalyzer) don't get
@@ -96,17 +92,6 @@ delegate_function = FunctionSchema(
     },
     required=["instructions"],
 )
-
-
-async def handle_delegate_to_assistant(params: FunctionCallParams):
-    """Handle delegation to the assistant."""
-    try:
-        instructions = params.arguments.get("instructions", "")
-        result = _factory.assistant.run(instructions)
-        await params.result_callback({"result": result})
-    except Exception as e:  # pylint: disable=broad-exception-caught
-        logger.error(f"Error delegating to assistant: {e}")
-        await params.result_callback({"error": str(e)})
 
 
 # pylint: disable=too-many-locals

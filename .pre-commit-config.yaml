@@ -4,6 +4,8 @@ repos:
     rev: 24.4.2
     hooks:
       - id: black
+        args:
+          - --line-length=79
         exclude: ^voice-ui-kit/
 
   # Ruff for linting & autofix

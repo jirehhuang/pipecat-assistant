@@ -80,6 +80,7 @@ export const BotAudioPanel: React.FC<BotAudioPanelProps> = ({
               size="sm"
               isIcon
               onClick={onMuteToggle}
+              disabled={!track}
               className="ml-auto"
               aria-label={isMuted ? "Unmute bot" : "Mute bot"}
             >
@@ -90,28 +91,37 @@ export const BotAudioPanel: React.FC<BotAudioPanelProps> = ({
       )}
       <PanelContent
         className={cn("overflow-hidden flex-1", {
-          "aspect-video": collapsed,
+          "aspect-video": collapsed && !onMuteToggle,
+          "min-h-32": collapsed && onMuteToggle,
         })}
       >
         <div
           ref={containerRef}
-          className="relative flex h-full overflow-hidden"
+          className={cn("flex h-full overflow-hidden", {
+            "flex-col": collapsed,
+            "relative": !collapsed,
+          })}
         >
           {/* Mute button for collapsed state */}
           {collapsed && onMuteToggle && (
-            <Button
-              variant="ghost"
-              size="sm"
-              isIcon
-              onClick={onMuteToggle}
-              className="absolute top-2 right-2 z-10"
-              aria-label={isMuted ? "Unmute bot" : "Mute bot"}
-            >
-              {isMuted ? <VolumeXIcon size={16} /> : <Volume2Icon size={16} />}
-            </Button>
+            <>
+              <div className="flex justify-end p-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  isIcon
+                  onClick={onMuteToggle}
+                  disabled={!track}
+                  aria-label={isMuted ? "Unmute bot" : "Mute bot"}
+                >
+                  {isMuted ? <VolumeXIcon size={16} /> : <Volume2Icon size={16} />}
+                </Button>
+              </div>
+              <div className="border-t border-border" />
+            </>
           )}
           {track ? (
-            <div className="m-auto">
+            <div className={cn({ "m-auto": !collapsed, "flex-1 flex items-center justify-center": collapsed })}>
               <VoiceVisualizer
                 participantType="bot"
                 backgroundColor="transparent"
@@ -125,7 +135,9 @@ export const BotAudioPanel: React.FC<BotAudioPanelProps> = ({
               />
             </div>
           ) : (
-            <div className="text-subtle flex w-full gap-2 items-center justify-center">
+            <div className={cn("text-subtle flex w-full gap-2 items-center justify-center", {
+              "flex-1": collapsed,
+            })}>
               <MicOffIcon size={16} />
               {!collapsed && (
                 <span className="font-semibold text-sm">No audio</span>

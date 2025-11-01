@@ -54,23 +54,24 @@ delegate_to_shopping_list_manager_function = FunctionSchema(
 )
 
 
-async def handle_delegate_to_task_manager(params: FunctionCallParams):
-    """Handle delegation to the task manager."""
+async def _handle_delegate_to_manager(
+    params: FunctionCallParams, manager_name: str
+):
+    """Handle delegating to a manager."""
     try:
         instructions = params.arguments.get("instructions", "")
         result = await asyncio.to_thread(_factory.assistant.run, instructions)
         await params.result_callback({"result": result})
     except Exception as e:  # pylint: disable=broad-exception-caught
-        logger.error(f"Error delegating to task manager: {e}")
+        logger.error(f"Error delegating to {manager_name}: {e}")
         await params.result_callback({"error": str(e)})
+
+
+async def handle_delegate_to_task_manager(params: FunctionCallParams):
+    """Handle delegation to the task manager."""
+    await _handle_delegate_to_manager(params, "task manager")
 
 
 async def handle_delegate_to_shopping_list_manager(params: FunctionCallParams):
     """Handle delegation to the shopping list manager."""
-    try:
-        instructions = params.arguments.get("instructions", "")
-        result = await asyncio.to_thread(_factory.assistant.run, instructions)
-        await params.result_callback({"result": result})
-    except Exception as e:  # pylint: disable=broad-exception-caught
-        logger.error(f"Error delegating to shopping list manager: {e}")
-        await params.result_callback({"error": str(e)})
+    await _handle_delegate_to_manager(params, "shopping list manager")

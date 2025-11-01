@@ -1,5 +1,7 @@
 """Function handlers for the Pipecat assistant bot."""
 
+import asyncio
+
 from jhutils.agent import AssistantFactory
 from loguru import logger
 from pipecat.adapters.schemas.function_schema import FunctionSchema
@@ -56,7 +58,7 @@ async def handle_delegate_to_task_manager(params: FunctionCallParams):
     """Handle delegation to the task manager."""
     try:
         instructions = params.arguments.get("instructions", "")
-        result = _factory.assistant.run(instructions)
+        result = await asyncio.to_thread(_factory.assistant.run, instructions)
         await params.result_callback({"result": result})
     except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error(f"Error delegating to task manager: {e}")
@@ -67,7 +69,7 @@ async def handle_delegate_to_shopping_list_manager(params: FunctionCallParams):
     """Handle delegation to the shopping list manager."""
     try:
         instructions = params.arguments.get("instructions", "")
-        result = _factory.assistant.run(instructions)
+        result = await asyncio.to_thread(_factory.assistant.run, instructions)
         await params.result_callback({"result": result})
     except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error(f"Error delegating to shopping list manager: {e}")

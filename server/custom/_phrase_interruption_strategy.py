@@ -4,7 +4,7 @@ from pipecat.audio.interruptions.base_interruption_strategy import (
     BaseInterruptionStrategy,
 )
 
-from ._sleep_command_processor import SLEEP_PHRASES
+from ._command_actions import SLEEP_PHRASES
 from ._utils import compile_phrase_patterns
 
 INTERRUPT_PHRASES = [
@@ -16,16 +16,15 @@ INTERRUPT_PHRASES = [
 
 
 class PhraseInterruptionStrategy(BaseInterruptionStrategy):
-    """Interrupt immediately if specific phrases are detected."""
+    """Interrupt immediately if specific phrases are detected.
+
+    Parameters
+    ----------
+    phrases
+        List of phrases that trigger immediate interruption.
+    """
 
     def __init__(self, phrases: list[str] | None = None):
-        """Initialize the phrase interruption strategy.
-
-        Parameters
-        ----------
-        phrases
-            List of phrases that trigger immediate interruption.
-        """
         super().__init__()
         if phrases is None:
             phrases = INTERRUPT_PHRASES

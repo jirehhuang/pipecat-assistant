@@ -6,7 +6,9 @@ import os
 
 import aiohttp
 from dotenv import load_dotenv
+from jhutils.agent import AssistantFactory
 from loguru import logger
+from pipecat.adapters.schemas.tools_schema import ToolsSchema
 from pipecat.audio.interruptions.min_words_interruption_strategy import (
     MinWordsInterruptionStrategy,
 )
@@ -30,6 +32,7 @@ from pipecat.processors.frameworks.rtvi import (
 from pipecat.runner.types import RunnerArguments
 from pipecat.runner.utils import create_transport
 from pipecat.services.deepgram.stt import DeepgramSTTService
+from pipecat.services.llm_service import FunctionCallParams
 from pipecat.services.openrouter.llm import OpenRouterLLMService
 from pipecat.services.piper.tts import PiperTTSService
 from pipecat.transports.base_transport import BaseTransport, TransportParams
@@ -42,6 +45,9 @@ from custom import (
 )
 
 load_dotenv(override=True)
+
+
+_factory = AssistantFactory()
 
 
 # We store functions so objects (e.g. SileroVADAnalyzer) don't get
@@ -61,6 +67,33 @@ transport_params = {
         turn_analyzer=LocalSmartTurnAnalyzerV3(),
     ),
 }
+
+
+async def delegate_to_assistant(
+    params: FunctionCallParams, instructions: str, **kwargs
+):
+    """Delegate instructions to the assistant.
+
+    The assistant is capable of the following actions:
+
+    1. Add tasks to the tasks list.
+    2. Add shopping items to the shopping list.
+
+    Parameters
+    ----------
+    instructions : str
+        Clear instructions to the assistant, with all relevant details.
+        If lengthy or complex, break them down to separate calls.
+        For example:
+        "Add milk and eggs from Costco and canned chipotles from Walmart", or
+        "Add task to 1) buy groceries and 2) get an oil change".
+    """
+    try:
+        result = _factory.assistant.run(instructions)
+        await params.result_callback({"result": result})
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        logger.error(f"Error delegating to assistant: {e}")
+        await params.result_callback({"error": str(e)})
 
 
 # pylint: disable=too-many-locals
@@ -85,6 +118,9 @@ async def create_bot_pipeline(
         model="openai/gpt-4o-mini",
     )
 
+    # Register function for delegating to assistant
+    llm.register_direct_function(delegate_to_assistant)  # type: ignore
+
     rtvi = RTVIProcessor(config=RTVIConfig(config=[]))
 
     wake_filter = ActiveStartWakeFilter()
@@ -96,15 +132,18 @@ async def create_bot_pipeline(
         {
             "role": "system",
             "content": (
-                "You are a helpful assistant. Your output will be converted "
-                "to audio so don't include special characters in your "
-                "answers. Respond to what the user said in a creative and "
-                "helpful way.",
+                "You are a helpful and efficient assistant. "
+                "Respond as concisely and completely as possible. "
+                "Your output will be converted to audio, so do not include "
+                "any special characters or formatting."
             ),
         },
     ]
 
-    context = OpenAILLMContext(messages)  # type: ignore
+    # Create tools schema with the assistant delegation function
+    tools = ToolsSchema(standard_tools=[delegate_to_assistant])  # type: ignore
+
+    context = OpenAILLMContext(messages, tools=tools)  # type: ignore
     context_aggregator = llm.create_context_aggregator(context)
 
     pipeline = Pipeline(

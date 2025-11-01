@@ -7,8 +7,9 @@ import {
 import { cn } from "@/lib/utils";
 import { VoiceVisualizer } from "@/visualizers/VoiceVisualizer";
 import { usePipecatClientMediaTrack } from "@pipecat-ai/client-react";
-import { MicOffIcon } from "lucide-react";
+import { MicOffIcon, Volume2Icon, VolumeXIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 
 interface BotAudioPanelProps {
   audioTracks?: MediaStreamTrack[];
@@ -24,6 +25,8 @@ const barCount = 10;
 export const BotAudioPanel: React.FC<BotAudioPanelProps> = ({
   className,
   collapsed = false,
+  isMuted = false,
+  onMuteToggle,
 }) => {
   const track = usePipecatClientMediaTrack("audio", "bot");
 
@@ -71,6 +74,18 @@ export const BotAudioPanel: React.FC<BotAudioPanelProps> = ({
       {!collapsed && (
         <PanelHeader>
           <PanelTitle>Bot Audio</PanelTitle>
+          {onMuteToggle && (
+            <Button
+              variant="ghost"
+              size="sm"
+              isIcon
+              onClick={onMuteToggle}
+              className="ml-auto"
+              aria-label={isMuted ? "Unmute bot" : "Mute bot"}
+            >
+              {isMuted ? <VolumeXIcon size={16} /> : <Volume2Icon size={16} />}
+            </Button>
+          )}
         </PanelHeader>
       )}
       <PanelContent
@@ -82,6 +97,19 @@ export const BotAudioPanel: React.FC<BotAudioPanelProps> = ({
           ref={containerRef}
           className="relative flex h-full overflow-hidden"
         >
+          {/* Mute button for collapsed state */}
+          {collapsed && onMuteToggle && (
+            <Button
+              variant="ghost"
+              size="sm"
+              isIcon
+              onClick={onMuteToggle}
+              className="absolute top-2 right-2 z-10"
+              aria-label={isMuted ? "Unmute bot" : "Mute bot"}
+            >
+              {isMuted ? <VolumeXIcon size={16} /> : <Volume2Icon size={16} />}
+            </Button>
+          )}
           {track ? (
             <div className="m-auto">
               <VoiceVisualizer

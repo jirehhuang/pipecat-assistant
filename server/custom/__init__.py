@@ -1,6 +1,10 @@
 """Custom server functionality for Pipecat Assistant."""
 
 from ._active_start_wake_filter import ActiveStartWakeFilter
+from ._bot_audio_control_processor import (
+    create_set_bot_audio_mute_handler,
+    set_bot_audio_mute_function,
+)
 from ._command_actions import (
     create_mute_bot_action,
     create_sleep_action,

@@ -7,7 +7,6 @@ import os
 import aiohttp
 from dotenv import load_dotenv
 from loguru import logger
-from pipecat.adapters.schemas.function_schema import FunctionSchema
 from pipecat.adapters.schemas.tools_schema import ToolsSchema
 from pipecat.audio.interruptions.min_words_interruption_strategy import (
     MinWordsInterruptionStrategy,
@@ -42,7 +41,12 @@ from custom import (
     PhraseInterruptionStrategy,
     SleepCommandProcessor,
 )
-from custom._functions import handle_delegate_to_assistant
+from custom._functions import (
+    delegate_to_shopping_list_manager_function,
+    delegate_to_task_manager_function,
+    handle_delegate_to_shopping_list_manager,
+    handle_delegate_to_task_manager,
+)
 
 load_dotenv(override=True)
 
@@ -64,34 +68,6 @@ transport_params = {
         turn_analyzer=LocalSmartTurnAnalyzerV3(),
     ),
 }
-
-
-# Define function schema for assistant delegation
-delegate_function = FunctionSchema(
-    name="delegate_to_assistant",
-    description=(
-        "Delegate instructions to the assistant. "
-        "The assistant is capable of the following actions: \n"
-        "1. Add tasks to the tasks list.\n"
-        "2. Add shopping items to the shopping list.\n"
-        "If lengthy or complex, break them down to separate calls, "
-        "but **group related items together such as tasks with tasks "
-        "and shopping items with shopping items**."
-    ),
-    properties={
-        "instructions": {
-            "type": "string",
-            "description": (
-                "Clear instructions to the assistant, with all relevant "
-                "details. For example: "
-                "'Add milk and eggs from Costco and canned chipotles from "
-                "Walmart', or "
-                "'Add tasks to: 1) buy groceries and 2) get an oil change'."
-            ),
-        },
-    },
-    required=["instructions"],
-)
 
 
 # pylint: disable=too-many-locals
@@ -116,9 +92,13 @@ async def create_bot_pipeline(
         model="openai/gpt-4o-mini",
     )
 
-    # Register function handler for delegating to assistant
+    # Register function handlers
     llm.register_function(
-        "delegate_to_assistant", handle_delegate_to_assistant
+        "delegate_to_task_manager", handle_delegate_to_task_manager
+    )
+    llm.register_function(
+        "delegate_to_shopping_list_manager",
+        handle_delegate_to_shopping_list_manager,
     )
 
     rtvi = RTVIProcessor(config=RTVIConfig(config=[]))
@@ -140,8 +120,13 @@ async def create_bot_pipeline(
         },
     ]
 
-    # Create tools schema with the assistant delegation function
-    tools = ToolsSchema(standard_tools=[delegate_function])
+    # Create tools schema with both delegation functions
+    tools = ToolsSchema(
+        standard_tools=[
+            delegate_to_task_manager_function,
+            delegate_to_shopping_list_manager_function,
+        ]
+    )
 
     context = OpenAILLMContext(messages, tools=tools)  # type: ignore
     context_aggregator = llm.create_context_aggregator(context)

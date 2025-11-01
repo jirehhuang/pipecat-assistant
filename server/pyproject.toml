@@ -8,6 +8,7 @@ dependencies = [
     "pipecatcloud>=0.2.6",
     "piper-tts>=1.0.0,<2.0.0",
     "flask>=3.0.0,<4.0.0",
+    "jhutils @ https://github.com/jirehhuang/jhutils/archive/6ca5f474d4c32216c1a675a241f73d2caf12d08c.tar.gz",
 ]
 
 [tool.poetry]

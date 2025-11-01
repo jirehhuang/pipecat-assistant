@@ -118,8 +118,8 @@ async def create_bot_pipeline(
 
     wake_filter = ActiveStartWakeFilter()
 
-    # Gate to control TTS output (for mute/unmute)
-    tts_gate = TTSGateProcessor(gate_open=True)
+    # Gate to control TTS output (for mute/unmute) - start muted
+    tts_gate = TTSGateProcessor(gate_open=False)
 
     # Create command actions
     sleep_action = CommandAction(

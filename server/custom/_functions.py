@@ -34,7 +34,7 @@ delegate_to_task_manager_function = FunctionSchema(
 delegate_to_shopping_list_manager_function = FunctionSchema(
     name="delegate_to_shopping_list_manager",
     description=(
-        "Delegate shopping-related instructions to the shopping list manager"
+        "Delegate shopping-related instructions to the shopping list manager "
         "to add shopping items to the shopping list."
     ),
     properties={

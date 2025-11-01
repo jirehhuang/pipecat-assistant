@@ -7,6 +7,7 @@ import os
 import aiohttp
 from dotenv import load_dotenv
 from loguru import logger
+from pipecat.adapters.schemas.tools_schema import ToolsSchema
 from pipecat.audio.interruptions.min_words_interruption_strategy import (
     MinWordsInterruptionStrategy,
 )
@@ -39,6 +40,12 @@ from custom import (
     ActiveStartWakeFilter,
     PhraseInterruptionStrategy,
     SleepCommandProcessor,
+)
+from custom._functions import (
+    delegate_to_shopping_list_manager_function,
+    delegate_to_task_manager_function,
+    handle_delegate_to_shopping_list_manager,
+    handle_delegate_to_task_manager,
 )
 
 load_dotenv(override=True)
@@ -85,6 +92,15 @@ async def create_bot_pipeline(
         model="openai/gpt-4o-mini",
     )
 
+    # Register function handlers
+    llm.register_function(
+        "delegate_to_task_manager", handle_delegate_to_task_manager
+    )
+    llm.register_function(
+        "delegate_to_shopping_list_manager",
+        handle_delegate_to_shopping_list_manager,
+    )
+
     rtvi = RTVIProcessor(config=RTVIConfig(config=[]))
 
     wake_filter = ActiveStartWakeFilter()
@@ -96,15 +112,23 @@ async def create_bot_pipeline(
         {
             "role": "system",
             "content": (
-                "You are a helpful assistant. Your output will be converted "
-                "to audio so don't include special characters in your "
-                "answers. Respond to what the user said in a creative and "
-                "helpful way.",
+                "You are a helpful and efficient assistant. "
+                "Respond as concisely and completely as possible. "
+                "Your output will be converted to audio, so do not include "
+                "any special characters or formatting."
             ),
         },
     ]
 
-    context = OpenAILLMContext(messages)  # type: ignore
+    # Create tools schema with both delegation functions
+    tools = ToolsSchema(
+        standard_tools=[
+            delegate_to_task_manager_function,
+            delegate_to_shopping_list_manager_function,
+        ]
+    )
+
+    context = OpenAILLMContext(messages, tools=tools)  # type: ignore
     context_aggregator = llm.create_context_aggregator(context)
 
     pipeline = Pipeline(

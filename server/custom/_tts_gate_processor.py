@@ -2,8 +2,6 @@
 
 from pipecat.frames.frames import (
     TTSAudioRawFrame,
-    TTSStartedFrame,
-    TTSStoppedFrame,
 )
 from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
 
@@ -45,9 +43,7 @@ class TTSGateProcessor(FrameProcessor):
         await super().process_frame(frame, direction)
 
         # Block TTS audio frames when gate is closed
-        if not self._gate_open and isinstance(
-            frame, (TTSAudioRawFrame, TTSStartedFrame, TTSStoppedFrame)
-        ):
+        if not self._gate_open and isinstance(frame, TTSAudioRawFrame):
             # Don't push audio frames - effectively muting the bot
             return
 

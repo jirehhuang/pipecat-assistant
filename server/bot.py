@@ -39,8 +39,6 @@ from pipecat.transports.daily.transport import DailyParams
 from custom import (
     ActiveStartWakeFilter,
     PhraseInterruptionStrategy,
-    create_set_bot_audio_mute_handler,
-    set_bot_audio_mute_function,
 )
 from custom._command_actions import (
     MUTE_BOT_PHRASES,
@@ -123,11 +121,6 @@ async def create_bot_pipeline(
     # Gate to control TTS output (for mute/unmute) - start muted
     tts_gate = TTSGateProcessor(gate_open=False)
 
-    # Register bot audio mute function handler
-    llm.register_function(
-        "set_bot_audio_mute", create_set_bot_audio_mute_handler(tts_gate)
-    )
-
     # Create command actions
     sleep_action = CommandAction(
         phrases=SLEEP_PHRASES,
@@ -168,12 +161,11 @@ async def create_bot_pipeline(
         },
     ]
 
-    # Create tools schema with all functions
+    # Create tools schema with both delegation functions
     tools = ToolsSchema(
         standard_tools=[
             delegate_to_task_manager_function,
             delegate_to_shopping_list_manager_function,
-            set_bot_audio_mute_function,
         ]
     )
 

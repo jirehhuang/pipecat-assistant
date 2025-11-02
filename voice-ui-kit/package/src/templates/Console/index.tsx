@@ -280,7 +280,6 @@ const ConsoleUI = ({
   const [isEventsPanelCollapsed, setIsEventsPanelCollapsed] = useState(collapseEventsPanel);
   const [participantId, setParticipantId] = useState("");
   const [sessionId, setSessionId] = useState("");
-  const [isBotAudioMuted, setIsBotAudioMuted] = useState(false);
 
   const infoPanelRef = useRef<ImperativePanelHandle>(null);
 
@@ -288,27 +287,6 @@ const ConsoleUI = ({
   const { isCamEnabled } = usePipecatClientCamControl();
   const { isConnected } = usePipecatConnectionState();
   const client = usePipecatClient();
-
-  // Handle bot audio mute toggle
-  const handleBotAudioMuteToggle = useCallback(async () => {
-    if (!client) return;
-
-    const newMutedState = !isBotAudioMuted;
-    setIsBotAudioMuted(newMutedState);
-
-    try {
-      // Send message to LLM to call the set_bot_audio_mute function
-      await client.appendToContext({
-        role: "user",
-        content: `Please call the set_bot_audio_mute function with muted=${newMutedState}. Do not respond with text, just execute the function.`,
-        run_immediately: true,
-      });
-    } catch (error) {
-      console.error("Failed to toggle bot audio mute:", error);
-      // Revert state on error
-      setIsBotAudioMuted(!newMutedState);
-    }
-  }, [client, isBotAudioMuted]);
 
   // Custom handler for text input that adds message to conversation and sends to bot
   const handleTextInputSend = useCallback(
@@ -440,8 +418,6 @@ const ConsoleUI = ({
                             "mb-auto": noBotVideo,
                           })}
                           collapsed={isBotAreaCollapsed}
-                          isMuted={isBotAudioMuted}
-                          onMuteToggle={handleBotAudioMuteToggle}
                         />
                       )}
                       {!noBotVideo && (

@@ -7,9 +7,8 @@ import {
 import { cn } from "@/lib/utils";
 import { VoiceVisualizer } from "@/visualizers/VoiceVisualizer";
 import { usePipecatClientMediaTrack } from "@pipecat-ai/client-react";
-import { MicOffIcon, Volume2Icon, VolumeXIcon } from "lucide-react";
+import { MicOffIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
 
 interface BotAudioPanelProps {
   audioTracks?: MediaStreamTrack[];
@@ -25,8 +24,6 @@ const barCount = 10;
 export const BotAudioPanel: React.FC<BotAudioPanelProps> = ({
   className,
   collapsed = false,
-  isMuted = false,
-  onMuteToggle,
 }) => {
   const track = usePipecatClientMediaTrack("audio", "bot");
 
@@ -74,54 +71,19 @@ export const BotAudioPanel: React.FC<BotAudioPanelProps> = ({
       {!collapsed && (
         <PanelHeader>
           <PanelTitle>Bot Audio</PanelTitle>
-          {onMuteToggle && (
-            <Button
-              variant="ghost"
-              size="sm"
-              isIcon
-              onClick={onMuteToggle}
-              disabled={!track}
-              className="ml-auto"
-              aria-label={isMuted ? "Unmute bot" : "Mute bot"}
-            >
-              {isMuted ? <VolumeXIcon size={16} /> : <Volume2Icon size={16} />}
-            </Button>
-          )}
         </PanelHeader>
       )}
       <PanelContent
         className={cn("overflow-hidden flex-1", {
-          "aspect-video": collapsed && !onMuteToggle,
-          "min-h-32": collapsed && onMuteToggle,
+          "aspect-video": collapsed,
         })}
       >
         <div
           ref={containerRef}
-          className={cn("flex h-full overflow-hidden", {
-            "flex-col": collapsed,
-            "relative": !collapsed,
-          })}
+          className="relative flex h-full overflow-hidden"
         >
-          {/* Mute button for collapsed state */}
-          {collapsed && onMuteToggle && (
-            <>
-              <div className="flex justify-end p-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  isIcon
-                  onClick={onMuteToggle}
-                  disabled={!track}
-                  aria-label={isMuted ? "Unmute bot" : "Mute bot"}
-                >
-                  {isMuted ? <VolumeXIcon size={16} /> : <Volume2Icon size={16} />}
-                </Button>
-              </div>
-              <div className="border-t border-border" />
-            </>
-          )}
           {track ? (
-            <div className={cn({ "m-auto": !collapsed, "flex-1 flex items-center justify-center": collapsed })}>
+            <div className="m-auto">
               <VoiceVisualizer
                 participantType="bot"
                 backgroundColor="transparent"
@@ -135,9 +97,7 @@ export const BotAudioPanel: React.FC<BotAudioPanelProps> = ({
               />
             </div>
           ) : (
-            <div className={cn("text-subtle flex w-full gap-2 items-center justify-center", {
-              "flex-1": collapsed,
-            })}>
+            <div className="text-subtle flex w-full gap-2 items-center justify-center">
               <MicOffIcon size={16} />
               {!collapsed && (
                 <span className="font-semibold text-sm">No audio</span>

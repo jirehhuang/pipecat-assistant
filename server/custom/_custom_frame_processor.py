@@ -73,7 +73,10 @@ class CommandAction:
         return patterns
 
     def matches(self, text: str) -> bool:
-        """Check if the text matches any of the command patterns."""
+        """Check if the text matches any of the command patterns.
+
+        Note that matching is case-insensitive and ignores extra whitespace.
+        """
         return any(pattern.search(text) for pattern in self._patterns)
 
 

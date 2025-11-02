@@ -4,11 +4,7 @@ import {
   ConsoleTemplate,
   FullScreenContainer,
   ThemeProvider,
-  PipecatAppBase,
-  SpinLoader,
-  type PipecatBaseChildProps,
 } from '@pipecat-ai/voice-ui-kit';
-import { App } from './components/App';
 
 export default function Home() {
   return (

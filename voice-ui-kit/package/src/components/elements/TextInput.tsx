@@ -111,7 +111,7 @@ export const TextInputComponent = ({
   const InputComponent = multiline ? Textarea : Input;
 
   return (
-    <div className={cn("flex flex-row gap-2", classNames?.container)}>
+    <div className={cn("flex flex-row gap-2 items-end", classNames?.container)}>
       <InputComponent
         placeholder={placeholder}
         value={message}

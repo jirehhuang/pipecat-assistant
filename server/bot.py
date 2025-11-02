@@ -16,9 +16,6 @@ from pipecat.audio.turn.smart_turn.local_smart_turn_v3 import (
 )
 from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.audio.vad.vad_analyzer import VADParams
-from pipecat.frames.frames import (
-    LLMRunFrame,
-)
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
@@ -39,7 +36,19 @@ from pipecat.transports.daily.transport import DailyParams
 from custom import (
     ActiveStartWakeFilter,
     PhraseInterruptionStrategy,
-    SleepCommandProcessor,
+)
+from custom._command_actions import (
+    MUTE_BOT_PHRASES,
+    SLEEP_PHRASES,
+    UNMUTE_BOT_PHRASES,
+    create_mute_bot_action,
+    create_sleep_action,
+    create_unmute_bot_action,
+)
+from custom._custom_frame_processor import (
+    CommandAction,
+    CustomFrameProcessor,
+    MatchType,
 )
 from custom._functions import (
     delegate_to_shopping_list_manager_function,
@@ -47,6 +56,7 @@ from custom._functions import (
     handle_delegate_to_shopping_list_manager,
     handle_delegate_to_task_manager,
 )
+from custom._tts_gate_processor import TTSGateProcessor
 
 load_dotenv(override=True)
 
@@ -105,8 +115,36 @@ async def create_bot_pipeline(
 
     wake_filter = ActiveStartWakeFilter()
 
-    # Resets wake filter to idle when commanded
-    sleep_processor = SleepCommandProcessor(wake_filter)
+    # Gate to control TTS output (for mute/unmute) - start muted
+    tts_gate = TTSGateProcessor(gate_open=False)
+
+    # Create command actions
+    sleep_action = CommandAction(
+        phrases=SLEEP_PHRASES,
+        action=create_sleep_action(wake_filter),
+        match_type=MatchType.CONTAINS,
+        name="sleep",
+    )
+
+    mute_bot_action = CommandAction(
+        phrases=MUTE_BOT_PHRASES,
+        action=create_mute_bot_action(tts_gate),
+        match_type=MatchType.CONTAINS,
+        name="mute",
+    )
+
+    unmute_bot_action = CommandAction(
+        phrases=UNMUTE_BOT_PHRASES,
+        action=create_unmute_bot_action(tts_gate),
+        match_type=MatchType.CONTAINS,
+        name="unmute",
+    )
+
+    # Custom frame processor with all command actions
+    command_processor = CustomFrameProcessor(
+        actions=[sleep_action, mute_bot_action, unmute_bot_action],
+        block_on_match=True,
+    )
 
     messages = [
         {
@@ -137,10 +175,11 @@ async def create_bot_pipeline(
             rtvi,
             stt,
             wake_filter,
-            sleep_processor,
+            command_processor,
             context_aggregator.user(),
             llm,
             tts,
+            tts_gate,
             transport.output(),
             context_aggregator.assistant(),
         ]
@@ -163,14 +202,6 @@ async def create_bot_pipeline(
     @transport.event_handler("on_client_connected")
     async def on_client_connected(transport, client):
         logger.info("Client connected")
-        # Kick off the conversation.
-        messages.append(
-            {
-                "role": "system",
-                "content": "Please introduce yourself to the user.",
-            }
-        )
-        await task.queue_frames([LLMRunFrame()])
 
     @transport.event_handler("on_client_disconnected")
     async def on_client_disconnected(transport, client):

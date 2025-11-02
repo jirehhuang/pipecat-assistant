@@ -21,6 +21,13 @@ class ActiveStartWakeFilter(WakeCheckFilter):
     Additionally, by default, the keepalive timeout is set to infinity,
     meaning once awake, the filter remains awake indefinitely until a sleep
     command is received.
+
+    Parameters
+    ----------
+    wake_phrases
+        Phrases that will wake the filter.
+    keepalive_timeout
+        Time in seconds to stay awake without hearing a wake phrase.
     """
 
     def __init__(
@@ -28,15 +35,6 @@ class ActiveStartWakeFilter(WakeCheckFilter):
         wake_phrases: list[str] | None = None,
         keepalive_timeout: float = float("inf"),
     ):
-        """Initialize with wake phrases and keepalive timeout.
-
-        Parameters
-        ----------
-        wake_phrases
-            Phrases that will wake the filter.
-        keepalive_timeout
-            Time in seconds to stay awake without hearing a wake phrase.
-        """
         if wake_phrases is None or wake_phrases == []:
             wake_phrases = WAKE_PHRASES
 

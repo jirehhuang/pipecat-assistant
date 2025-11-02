@@ -453,7 +453,7 @@ const ConsoleUI = ({
                           }}
                         />
                       </div>
-                      <div className="pt-2 flex gap-2 items-start">
+                      <div className="pt-2 flex gap-2 items-end">
                         {!noUserAudio && (
                           <PipecatClientMicToggle>
                             {({ isMicEnabled, onClick }) => (
@@ -602,7 +602,7 @@ const ConsoleUI = ({
                     noMetrics={noMetrics}
                   />
                 </div>
-                <div className="p-2 flex gap-2 items-start">
+                <div className="p-2 flex gap-2 items-end">
                   {!noUserAudio && (
                     <PipecatClientMicToggle>
                       {({ isMicEnabled, onClick }) => (

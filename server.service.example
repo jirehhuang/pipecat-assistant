@@ -4,9 +4,9 @@ After=network.target
 
 [Service]
 Type=simple
-User=jireh
-WorkingDirectory=/home/jireh/systemd/pipecat-assistant/server
-ExecStart=/home/jireh/.local/bin/poetry run python bot.py -t daily --port 7680
+User=YOUR_USERNAME
+WorkingDirectory=/path/to/pipecat-assistant/server
+ExecStart=/path/to/poetry run python bot.py -t daily --port 7860  # which poetry; specify desired deployment port
 Restart=always
 RestartSec=5
 StandardOutput=journal

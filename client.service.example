@@ -1,0 +1,18 @@
+[Unit]
+Description=Pipecat Assistant Frontend Client
+After=network.target
+
+[Service]
+Type=simple
+User=jireh
+WorkingDirectory=/home/jireh/systemd/pipecat-assistant/client
+Environment=PORT=2774
+Environment=NODE_ENV=production
+ExecStart=/run/user/1000/fnm_multishells/1466253_1762099249531/bin/npm run start
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

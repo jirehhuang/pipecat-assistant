@@ -1,0 +1,16 @@
+[Unit]
+Description=Pipecat Assistant Backend Server
+After=network.target
+
+[Service]
+Type=simple
+User=jireh
+WorkingDirectory=/home/jireh/systemd/pipecat-assistant/server
+ExecStart=/home/jireh/.local/bin/poetry run python bot.py -t daily --port 7680
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

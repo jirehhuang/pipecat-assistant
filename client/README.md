@@ -6,7 +6,7 @@ Navigate to the `client/` directory:
 cd client
 ```
 
-Configure environment by updating `BOT_START_URL` to use the desired port. If exposing via [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/) for example, specify and `ALLOWED_DEV_ORIGIN` as well.
+Configure environment by updating `BOT_START_URL` to use the desired port. If exposing via [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/) for example, specify `ALLOWED_DEV_ORIGIN` as well.
 
 ```
 cp env.example .env.local

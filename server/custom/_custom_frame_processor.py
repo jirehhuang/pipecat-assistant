@@ -2,11 +2,20 @@
 
 import re
 from enum import Enum
-from typing import Awaitable, Callable
+from typing import Awaitable, Callable, Union
 
 from loguru import logger
-from pipecat.frames.frames import TranscriptionFrame
+from pipecat.frames.frames import (
+    LLMContextFrame,
+    LLMMessagesAppendFrame,
+    TranscriptionFrame,
+)
+from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
 from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
+
+CommandFrameType = Union[
+    TranscriptionFrame, LLMContextFrame, LLMMessagesAppendFrame
+]
 
 
 class MatchType(Enum):
@@ -16,6 +25,35 @@ class MatchType(Enum):
     STARTS_WITH = "starts_with"  # Prompt starts with the phrase
     ENDS_WITH = "ends_with"  # Prompt ends with the phrase
     CONTAINS = "contains"  # Prompt contains the phrase (default)
+
+
+def _get_user_content_from_context(
+    context: LLMContextFrame,
+) -> str | None:
+    """Extract the most recent user message content."""
+    if isinstance(context.context, OpenAILLMContext):
+        messages = context.context.get_messages_for_logging()
+
+        if messages and messages[-1].get("role") == "user":
+            content = messages[-1].get("content", "")
+
+            if isinstance(content, str):
+                logger.info(f'LLMContextFrame user content: "{content}"')
+                return content
+    return None
+
+
+def _get_user_content_from_append_frame(
+    frame: LLMMessagesAppendFrame,
+) -> str | None:
+    """Extract the most recent user message content."""
+    if frame.messages and frame.messages[-1].get("role") == "user":
+        content = frame.messages[-1].get("content", "")
+
+        if isinstance(content, str):
+            logger.info(f'LLMMessagesAppendFrame user content: "{content}"')
+            return content
+    return None
 
 
 # pylint: disable=too-few-public-methods
@@ -37,7 +75,10 @@ class CommandAction:
     def __init__(
         self,
         phrases: list[str],
-        action: Callable[[TranscriptionFrame], Awaitable[None]],
+        action: Callable[
+            [CommandFrameType],
+            Awaitable[None],
+        ],
         match_type: MatchType = MatchType.CONTAINS,
         name: str | None = None,
     ):
@@ -79,6 +120,20 @@ class CommandAction:
         """
         return any(pattern.search(text) for pattern in self._patterns)
 
+    def remove_matched_text(self, text: str) -> str:
+        """Remove the matched command text from the input text.
+
+        Returns the text with the first match removed.
+        """
+        for pattern in self._patterns:
+            match = pattern.search(text)
+            if match:
+                match_start = match.start()
+                match_end = match.end()
+                result = text[:match_start] + text[match_end:]
+                return result.strip()
+        return text
+
 
 class CustomFrameProcessor(FrameProcessor):
     """Processor for flexibly handling hard-coded command patterns.
@@ -119,18 +174,46 @@ class CustomFrameProcessor(FrameProcessor):
         """Process frames and check for command matches."""
         await super().process_frame(frame, direction)
 
+        text_to_check = None
+
         if isinstance(frame, TranscriptionFrame):
-            # Check each registered action
+            text_to_check = frame.text
+            logger.info(
+                f"Processing TranscriptionFrame text: '{text_to_check}'"
+            )
+        elif isinstance(frame, LLMContextFrame):
+            logger.info(
+                "Processing LLMContextFrame, context type: "
+                f"{type(frame.context)}"
+            )
+            text_to_check = _get_user_content_from_context(frame)
+
+        elif isinstance(frame, LLMMessagesAppendFrame):
+            logger.info(
+                "Processing LLMMessagesAppendFrame with "
+                f"{len(frame.messages)} messages"
+            )
+            text_to_check = _get_user_content_from_append_frame(frame)
+
+        if text_to_check:
             for action in self._actions:
-                if action.matches(frame.text):
-                    logger.info(
-                        f"Command '{action.name}' matched: '{frame.text}'"
-                    )
-                    # Execute the action
+                if not action.matches(text_to_check):
+                    continue
+
+                logger.info(
+                    f"Command '{action.name}' matched: '{text_to_check}'"
+                )
+                if isinstance(
+                    frame,
+                    (
+                        TranscriptionFrame,
+                        LLMContextFrame,
+                        LLMMessagesAppendFrame,
+                    ),
+                ):
                     await action.action(frame)
 
-                    # Optionally block the frame from proceeding
-                    if self._block_on_match:
-                        return
+                if self._block_on_match:
+                    return
 
         await self.push_frame(frame, direction)

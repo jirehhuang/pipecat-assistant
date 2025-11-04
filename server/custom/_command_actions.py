@@ -2,10 +2,14 @@
 
 # pylint: disable=unused-argument
 
+
 from loguru import logger
-from pipecat.frames.frames import TranscriptionFrame
+from pipecat.frames.frames import (
+    TranscriptionFrame,
+)
 
 from ._active_start_wake_filter import ActiveStartWakeFilter
+from ._custom_frame_processor import CommandFrameType
 
 SLEEP_PHRASES = ["go idle", "take a break", "let me think"]
 
@@ -28,10 +32,17 @@ def create_sleep_action(wake_filter: ActiveStartWakeFilter):
         Async function that handles sleep commands.
     """
 
-    async def sleep_action(frame: TranscriptionFrame):
+    async def sleep_action(frame: CommandFrameType):
         """Set the wake filter to idle state."""
-        logger.info(f"Executing sleep action for user: {frame.user_id}")
-        wake_filter.set_participant_idle(frame.user_id)
+        user_id = (
+            frame.user_id if isinstance(frame, TranscriptionFrame) else None
+        )
+        logger.info(f"Executing sleep action for user: {user_id}")
+        if user_id:
+            wake_filter.set_participant_idle(user_id)
+        else:
+            # For LLM context frames, we don't have a specific user_id
+            logger.info("Sleep action triggered via text input")
 
     return sleep_action
 
@@ -50,7 +61,7 @@ def create_mute_bot_action(tts_gate):
         Async function that mutes the bot's TTS.
     """
 
-    async def mute_bot_action(frame: TranscriptionFrame):
+    async def mute_bot_action(frame: CommandFrameType):
         """Disable TTS output."""
         logger.info("Executing mute bot action - disabling TTS")
         tts_gate.gate_open = False
@@ -72,7 +83,7 @@ def create_unmute_bot_action(tts_gate):
         Async function that unmutes the bot's TTS.
     """
 
-    async def unmute_bot_action(frame: TranscriptionFrame):
+    async def unmute_bot_action(frame: CommandFrameType):
         """Enable TTS output."""
         logger.info("Executing unmute bot action - enabling TTS")
         tts_gate.gate_open = True

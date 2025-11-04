@@ -140,10 +140,20 @@ async def create_bot_pipeline(
         name="unmute",
     )
 
-    # Custom frame processor with all command actions
-    command_processor = CustomFrameProcessor(
+    # Custom frame processor for transcription frames (speech input)
+    transcription_command_processor = CustomFrameProcessor(
         actions=[sleep_action, mute_bot_action, unmute_bot_action],
         block_on_match=True,
+    )
+
+    # Custom frame processor for LLM context frames
+    # (text input via client.appendToContext)
+    context_command_processor = CustomFrameProcessor(
+        actions=[sleep_action, mute_bot_action, unmute_bot_action],
+        block_on_match=True,
+    )
+    logger.info(
+        f"Created context_command_processor: {context_command_processor}"
     )
 
     messages = [
@@ -169,21 +179,31 @@ async def create_bot_pipeline(
     context = OpenAILLMContext(messages, tools=tools)  # type: ignore
     context_aggregator = llm.create_context_aggregator(context)
 
-    pipeline = Pipeline(
-        [
-            transport.input(),
-            rtvi,
-            stt,
-            wake_filter,
-            command_processor,
-            context_aggregator.user(),
-            llm,
-            tts,
-            tts_gate,
-            transport.output(),
-            context_aggregator.assistant(),
-        ]
+    pipeline_processors = [
+        transport.input(),
+        rtvi,
+        context_command_processor,  # Catch LLMMessagesAppendFrame from RTVI
+        stt,
+        wake_filter,
+        transcription_command_processor,
+        context_aggregator.user(),
+        llm,
+        tts,
+        tts_gate,
+        transport.output(),
+        context_aggregator.assistant(),
+    ]
+
+    logger.info(
+        "Pipeline processors: "
+        f"{[type(p).__name__ for p in pipeline_processors]}"
     )
+    logger.info(
+        "Context command processor position: "
+        f"{pipeline_processors.index(context_command_processor)}"
+    )
+
+    pipeline = Pipeline(pipeline_processors)
 
     task = PipelineTask(
         pipeline,

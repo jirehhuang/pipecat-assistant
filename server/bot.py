@@ -118,42 +118,28 @@ async def create_bot_pipeline(
     # Gate to control TTS output (for mute/unmute) - start muted
     tts_gate = TTSGateProcessor(gate_open=False)
 
-    # Create command actions
+    # Create custom command actions
     sleep_action = CommandAction(
         phrases=SLEEP_PHRASES,
         action=create_sleep_action(wake_filter),
         match_type=MatchType.CONTAINS,
         name="sleep",
     )
-
     mute_bot_action = CommandAction(
         phrases=MUTE_BOT_PHRASES,
         action=create_mute_bot_action(tts_gate),
         match_type=MatchType.CONTAINS,
         name="mute",
     )
-
     unmute_bot_action = CommandAction(
         phrases=UNMUTE_BOT_PHRASES,
         action=create_unmute_bot_action(tts_gate),
         match_type=MatchType.CONTAINS,
         name="unmute",
     )
-
-    # Custom frame processor for transcription frames (speech input)
-    transcription_command_processor = CustomFrameProcessor(
+    command_processor = CustomFrameProcessor(
         actions=[sleep_action, mute_bot_action, unmute_bot_action],
         block_on_match=True,
-    )
-
-    # Custom frame processor for LLM context frames
-    # (text input via client.appendToContext)
-    context_command_processor = CustomFrameProcessor(
-        actions=[sleep_action, mute_bot_action, unmute_bot_action],
-        block_on_match=True,
-    )
-    logger.info(
-        f"Created context_command_processor: {context_command_processor}"
     )
 
     messages = [
@@ -182,10 +168,9 @@ async def create_bot_pipeline(
     pipeline_processors = [
         transport.input(),
         rtvi,
-        context_command_processor,  # Catch LLMMessagesAppendFrame from RTVI
         stt,
         wake_filter,
-        transcription_command_processor,
+        command_processor,
         context_aggregator.user(),
         llm,
         tts,
@@ -193,15 +178,6 @@ async def create_bot_pipeline(
         transport.output(),
         context_aggregator.assistant(),
     ]
-
-    logger.info(
-        "Pipeline processors: "
-        f"{[type(p).__name__ for p in pipeline_processors]}"
-    )
-    logger.info(
-        "Context command processor position: "
-        f"{pipeline_processors.index(context_command_processor)}"
-    )
 
     pipeline = Pipeline(pipeline_processors)
 

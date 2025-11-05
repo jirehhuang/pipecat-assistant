@@ -40,6 +40,11 @@ def _get_user_content_from_context(
             if isinstance(content, str):
                 logger.info(f'LLMContextFrame user content: "{content}"')
                 return content
+
+    logger.warning(
+        f"LLMContextFrame.context is not an OpenAILLMContext; "
+        f"cannot extract user content from {type(context.context).__name__})"
+    )
     return None
 
 

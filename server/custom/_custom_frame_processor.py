@@ -203,15 +203,7 @@ class CustomFrameProcessor(FrameProcessor):
                 logger.info(
                     f"Command '{action.name}' matched: '{text_to_check}'"
                 )
-                if isinstance(
-                    frame,
-                    (
-                        TranscriptionFrame,
-                        LLMContextFrame,
-                        LLMMessagesAppendFrame,
-                    ),
-                ):
-                    await action.action(frame)
+                await action.action(frame)  # type: ignore
 
                 if self._block_on_match:
                     return

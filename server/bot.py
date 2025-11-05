@@ -118,29 +118,25 @@ async def create_bot_pipeline(
     # Gate to control TTS output (for mute/unmute) - start muted
     tts_gate = TTSGateProcessor(gate_open=False)
 
-    # Create command actions
+    # Create custom command actions
     sleep_action = CommandAction(
         phrases=SLEEP_PHRASES,
         action=create_sleep_action(wake_filter),
         match_type=MatchType.CONTAINS,
         name="sleep",
     )
-
     mute_bot_action = CommandAction(
         phrases=MUTE_BOT_PHRASES,
         action=create_mute_bot_action(tts_gate),
         match_type=MatchType.CONTAINS,
         name="mute",
     )
-
     unmute_bot_action = CommandAction(
         phrases=UNMUTE_BOT_PHRASES,
         action=create_unmute_bot_action(tts_gate),
         match_type=MatchType.CONTAINS,
         name="unmute",
     )
-
-    # Custom frame processor with all command actions
     command_processor = CustomFrameProcessor(
         actions=[sleep_action, mute_bot_action, unmute_bot_action],
         block_on_match=True,
@@ -169,21 +165,21 @@ async def create_bot_pipeline(
     context = OpenAILLMContext(messages, tools=tools)  # type: ignore
     context_aggregator = llm.create_context_aggregator(context)
 
-    pipeline = Pipeline(
-        [
-            transport.input(),
-            rtvi,
-            stt,
-            wake_filter,
-            command_processor,
-            context_aggregator.user(),
-            llm,
-            tts,
-            tts_gate,
-            transport.output(),
-            context_aggregator.assistant(),
-        ]
-    )
+    pipeline_processors = [
+        transport.input(),
+        rtvi,
+        stt,
+        wake_filter,
+        command_processor,
+        context_aggregator.user(),
+        llm,
+        tts,
+        tts_gate,
+        transport.output(),
+        context_aggregator.assistant(),
+    ]
+
+    pipeline = Pipeline(pipeline_processors)
 
     task = PipelineTask(
         pipeline,

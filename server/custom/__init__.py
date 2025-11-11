@@ -11,5 +11,6 @@ from ._custom_frame_processor import (
     CustomFrameProcessor,
     MatchType,
 )
+from ._functions import assistant_llm
 from ._phrase_interruption_strategy import PhraseInterruptionStrategy
 from ._tts_gate_processor import TTSGateProcessor

@@ -127,7 +127,6 @@ class AssistantLLM:
                 continue
             try:
                 self._llm.unregister_function(function_name)
-                logger.info(f"Unregistered function: {function_name}")
             except Exception as e:  # pylint: disable=broad-exception-caught
                 if self._llm.has_function(function_name):
                     logger.warning(

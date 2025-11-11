@@ -65,7 +65,7 @@ class AssistantLLM:
 
     def change_mode(self, mode: str):
         """Change the assistant mode and update the LLM configuration."""
-        # .match_mode() updates to the fuzzy matched mode
+        # .match_mode() fuzzy matches and updates the mode to the matched mode
         matched_mode = self.assistant.toolset.match_mode(query=mode)
         if matched_mode is None:
             msg = f"Could not find mode: {mode}"

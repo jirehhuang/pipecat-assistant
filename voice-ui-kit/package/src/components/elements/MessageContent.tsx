@@ -76,7 +76,16 @@ export const MessageContent = ({ classNames = {}, message, enableMarkdown = fals
                       ol: ({ children, ...props }) => <ol {...props} className="list-decimal list-inside mb-2 last:mb-0 space-y-1">{children}</ol>,
                       li: ({ children, ...props }) => <li {...props} className="ml-2">{children}</li>,
                       // Style links
-                      a: ({ children, ...props }) => <a {...props} className="text-primary underline hover:no-underline">{children}</a>,
+                      a: ({ children, ...props }) => (
+                        <a
+                          {...props}
+                          className="text-primary underline hover:no-underline"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {children}
+                        </a>
+                      ),
                       // Style blockquotes
                       blockquote: ({ children, ...props }) => (
                         <blockquote {...props} className="border-l-4 border-muted pl-4 italic mb-2 last:mb-0">

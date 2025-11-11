@@ -29,6 +29,7 @@ from pipecat.services.deepgram.stt import DeepgramSTTService
 from pipecat.services.piper.tts import PiperTTSService
 from pipecat.transports.base_transport import BaseTransport, TransportParams
 from pipecat.transports.daily.transport import DailyParams
+from pipecat.utils.text.markdown_text_filter import MarkdownTextFilter
 
 from custom import (
     ActiveStartWakeFilter,
@@ -83,10 +84,16 @@ async def create_bot_pipeline(
 
     stt = DeepgramSTTService(api_key=os.getenv("DEEPGRAM_API_KEY", ""))
 
+    md_filter = MarkdownTextFilter(
+        enable_text_filter=True,
+        filter_code=True,
+        filter_tables=False,
+    )
     tts = PiperTTSService(
         base_url=os.getenv("PIPER_BASE_URL", ""),
         aiohttp_session=session,
         sample_rate=24000,
+        text_filter=md_filter,
     )
 
     rtvi = RTVIProcessor(config=RTVIConfig(config=[]))

@@ -100,7 +100,7 @@ class AssistantLLM:
                 "content": self.assistant.toolset.system_prompt,
             },
         ]
-        # Add most recent user query in case there applicable instructions
+        # Add most recent user query in case there are applicable instructions
         if len(self._context.messages) > 1:
             last_message = self._context.messages[-1]
             if last_message["role"] == "user":

@@ -7,7 +7,6 @@ import os
 import aiohttp
 from dotenv import load_dotenv
 from loguru import logger
-from pipecat.adapters.schemas.tools_schema import ToolsSchema
 from pipecat.audio.interruptions.min_words_interruption_strategy import (
     MinWordsInterruptionStrategy,
 )
@@ -19,7 +18,6 @@ from pipecat.audio.vad.vad_analyzer import VADParams
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
-from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
 from pipecat.processors.frameworks.rtvi import (
     RTVIConfig,
     RTVIObserver,
@@ -28,7 +26,6 @@ from pipecat.processors.frameworks.rtvi import (
 from pipecat.runner.types import RunnerArguments
 from pipecat.runner.utils import create_transport
 from pipecat.services.deepgram.stt import DeepgramSTTService
-from pipecat.services.openrouter.llm import OpenRouterLLMService
 from pipecat.services.piper.tts import PiperTTSService
 from pipecat.transports.base_transport import BaseTransport, TransportParams
 from pipecat.transports.daily.transport import DailyParams
@@ -36,6 +33,7 @@ from pipecat.transports.daily.transport import DailyParams
 from custom import (
     ActiveStartWakeFilter,
     PhraseInterruptionStrategy,
+    make_assistant_llm,
 )
 from custom._command_actions import (
     MUTE_BOT_PHRASES,
@@ -49,12 +47,6 @@ from custom._custom_frame_processor import (
     CommandAction,
     CustomFrameProcessor,
     MatchType,
-)
-from custom._functions import (
-    delegate_to_shopping_list_manager_function,
-    delegate_to_task_manager_function,
-    handle_delegate_to_shopping_list_manager,
-    handle_delegate_to_task_manager,
 )
 from custom._tts_gate_processor import TTSGateProcessor
 
@@ -97,20 +89,6 @@ async def create_bot_pipeline(
         sample_rate=24000,
     )
 
-    llm = OpenRouterLLMService(
-        api_key=os.getenv("OPENROUTER_API_KEY", ""),
-        model="openai/gpt-4o-mini",
-    )
-
-    # Register function handlers
-    llm.register_function(
-        "delegate_to_task_manager", handle_delegate_to_task_manager
-    )
-    llm.register_function(
-        "delegate_to_shopping_list_manager",
-        handle_delegate_to_shopping_list_manager,
-    )
-
     rtvi = RTVIProcessor(config=RTVIConfig(config=[]))
 
     wake_filter = ActiveStartWakeFilter()
@@ -142,28 +120,7 @@ async def create_bot_pipeline(
         block_on_match=True,
     )
 
-    messages = [
-        {
-            "role": "system",
-            "content": (
-                "You are a helpful and efficient assistant. "
-                "Respond as concisely and completely as possible. "
-                "Your output will be converted to audio, so do not include "
-                "any special characters or formatting."
-            ),
-        },
-    ]
-
-    # Create tools schema with both delegation functions
-    tools = ToolsSchema(
-        standard_tools=[
-            delegate_to_task_manager_function,
-            delegate_to_shopping_list_manager_function,
-        ]
-    )
-
-    context = OpenAILLMContext(messages, tools=tools)  # type: ignore
-    context_aggregator = llm.create_context_aggregator(context)
+    assistant_llm = make_assistant_llm()
 
     pipeline_processors = [
         transport.input(),
@@ -171,12 +128,12 @@ async def create_bot_pipeline(
         stt,
         wake_filter,
         command_processor,
-        context_aggregator.user(),
-        llm,
+        assistant_llm.context_aggregator.user(),
+        assistant_llm.llm,
         tts,
         tts_gate,
         transport.output(),
-        context_aggregator.assistant(),
+        assistant_llm.context_aggregator.assistant(),
     ]
 
     pipeline = Pipeline(pipeline_processors)

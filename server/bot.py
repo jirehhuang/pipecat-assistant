@@ -33,7 +33,7 @@ from pipecat.transports.daily.transport import DailyParams
 from custom import (
     ActiveStartWakeFilter,
     PhraseInterruptionStrategy,
-    assistant_llm,
+    make_assistant_llm,
 )
 from custom._command_actions import (
     MUTE_BOT_PHRASES,
@@ -119,6 +119,8 @@ async def create_bot_pipeline(
         actions=[sleep_action, mute_bot_action, unmute_bot_action],
         block_on_match=True,
     )
+
+    assistant_llm = make_assistant_llm()
 
     pipeline_processors = [
         transport.input(),

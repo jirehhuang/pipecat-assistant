@@ -4,7 +4,6 @@ import asyncio
 import os
 from typing import Callable
 
-from dotenv import load_dotenv
 from jhutils.agent import AssistantAgent, AssistantFactory
 from jhutils.agent.tools._tools import AVAILABLE_MODES
 from loguru import logger
@@ -14,8 +13,6 @@ from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
 from pipecat.services.llm_service import FunctionCallParams
 from pipecat.services.openai.llm import OpenAIContextAggregatorPair
 from pipecat.services.openrouter.llm import OpenRouterLLMService
-
-load_dotenv(override=True)
 
 assistant_factory = AssistantFactory()
 
@@ -213,4 +210,6 @@ class AssistantLLM:
             self._llm.register_function(tool_name, self._handlers[tool_name])
 
 
-assistant_llm = AssistantLLM(assistant_agent=assistant_factory.assistant)
+def make_assistant_llm() -> AssistantLLM:
+    """Create an AssistantLLM instance."""
+    return AssistantLLM(assistant_agent=assistant_factory.assistant)

@@ -48,6 +48,11 @@ interface Props {
    * The message to display
    */
   message: ConversationMessage;
+  /**
+   * Enable markdown rendering in message content.
+   * @default false
+   */
+  enableMarkdown?: boolean;
 }
 
 export const MessageContainer = ({
@@ -56,6 +61,7 @@ export const MessageContainer = ({
   systemLabel,
   classNames = {},
   message,
+  enableMarkdown = false,
 }: Props) => {
   return (
     <div className={cn("flex flex-col gap-2", classNames.container)}>
@@ -73,6 +79,7 @@ export const MessageContainer = ({
           time: classNames.time,
         }}
         message={message}
+        enableMarkdown={enableMarkdown}
       />
     </div>
   );

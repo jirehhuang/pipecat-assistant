@@ -53,6 +53,11 @@ export interface ConversationProps {
    * @default "llm"
    */
   textMode?: TextMode;
+  /**
+   * Enable markdown rendering in conversation messages.
+   * @default false
+   */
+  enableMarkdown?: boolean;
 }
 
 /**
@@ -91,6 +96,7 @@ export const Conversation: React.FC<ConversationProps> = memo(
     noAutoscroll = false,
     systemLabel,
     textMode = "llm",
+    enableMarkdown = false,
   }) => {
     const transportState = usePipecatClientTransportState();
 
@@ -170,6 +176,7 @@ export const Conversation: React.FC<ConversationProps> = memo(
                 assistantLabel={assistantLabel}
                 clientLabel={clientLabel}
                 systemLabel={systemLabel}
+                enableMarkdown={enableMarkdown}
                 classNames={{
                   container: classNames.message,
                   messageContent: classNames.messageContent,

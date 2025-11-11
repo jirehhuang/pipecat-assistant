@@ -24,9 +24,7 @@ EXCLUDE_TOOLS: set[str] = {"RespondTool"}
 class AssistantLLM:
     """Class for integrating the assistant with the LLM."""
 
-    def __init__(
-        self, assistant_agent: AssistantAgent = assistant_factory.assistant
-    ):
+    def __init__(self, assistant_agent: AssistantAgent):
         self._assistant = assistant_agent
         self._initialize_llm()
 
@@ -215,4 +213,4 @@ class AssistantLLM:
             self._llm.register_function(tool_name, self._handlers[tool_name])
 
 
-assistant_llm = AssistantLLM()
+assistant_llm = AssistantLLM(assistant_agent=assistant_factory.assistant)

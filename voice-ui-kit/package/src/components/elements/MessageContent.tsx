@@ -65,12 +65,22 @@ export const MessageContent = ({ classNames = {}, message, enableMarkdown = fals
                           {children}
                         </pre>
                       ),
-                      // Style inline code
-                      code: ({ children, ...props }) => (
-                        <code {...props} className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">
-                          {children}
-                        </code>
-                      ),
+                      // Style inline code vs code blocks differently
+                      code: ({ children, className, ...props }) => {
+                        // Check if this is inline code (has className starting with 'language-') or is in a pre block
+                        const isCodeBlock = className?.startsWith('language-');
+                        return isCodeBlock ? (
+                          // For code blocks, don't add background since pre handles it
+                          <code {...props} className={className}>
+                            {children}
+                          </code>
+                        ) : (
+                          // For inline code, add styling
+                          <code {...props} className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">
+                            {children}
+                          </code>
+                        );
+                      },
                       // Style lists
                       ul: ({ children, ...props }) => <ul {...props} className="list-disc list-inside mb-2 last:mb-0 space-y-1">{children}</ul>,
                       ol: ({ children, ...props }) => <ol {...props} className="list-decimal list-inside mb-2 last:mb-0 space-y-1">{children}</ol>,

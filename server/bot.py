@@ -85,9 +85,11 @@ async def create_bot_pipeline(
     stt = DeepgramSTTService(api_key=os.getenv("DEEPGRAM_API_KEY", ""))
 
     md_filter = MarkdownTextFilter(
-        enable_text_filter=True,
-        filter_code=True,
-        filter_tables=False,
+        params=MarkdownTextFilter.InputParams(
+            enable_text_filter=True,
+            filter_code=True,
+            filter_tables=False,
+        )
     )
     tts = PiperTTSService(
         base_url=os.getenv("PIPER_BASE_URL", ""),

@@ -12,6 +12,7 @@ from pipecat.adapters.schemas.function_schema import FunctionSchema
 from pipecat.adapters.schemas.tools_schema import ToolsSchema
 from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
 from pipecat.services.llm_service import FunctionCallParams
+from pipecat.services.openai.llm import OpenAIContextAggregatorPair
 from pipecat.services.openrouter.llm import OpenRouterLLMService
 
 load_dotenv(override=True)
@@ -39,12 +40,12 @@ class AssistantLLM:
         return self._llm
 
     @property
-    def context(self):
+    def context(self) -> OpenAILLMContext:
         """Get the LLM context."""
         return self._context
 
     @property
-    def context_aggregator(self):
+    def context_aggregator(self) -> OpenAIContextAggregatorPair:
         """Get the LLM context aggregator."""
         return self._context_aggregator
 

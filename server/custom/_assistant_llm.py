@@ -170,8 +170,15 @@ class AssistantLLM:
     ):
         """Handle execution of any tool by delegating to the assistant."""
         try:
+            self.assistant.toolset.selected_tools = [
+                self.assistant.toolset.get_tool(tool_name)
+            ]
             instructions = params.arguments.get("instructions", "")
-            result = await asyncio.to_thread(self.assistant.run, instructions)
+            result = await asyncio.to_thread(
+                self.assistant.run,
+                query=instructions,
+                reset_selected_tools=False,
+            )
             await params.result_callback({"result": result})
         except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error(f"Error executing {tool_name}: {e}")

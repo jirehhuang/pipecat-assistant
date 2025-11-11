@@ -35,6 +35,11 @@ interface ConversationPanelProps {
    * @default false
    */
   noTextModeToggle?: boolean;
+  /**
+   * Enable markdown rendering in conversation messages.
+   * @default false
+   */
+  enableMarkdown?: boolean;
 }
 
 export const ConversationPanel: React.FC<ConversationPanelProps> = memo(
@@ -44,6 +49,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = memo(
     noMetrics = false,
     noTextModeToggle = false,
     textMode: initialTextMode = "llm",
+    enableMarkdown = false,
   }) => {
     const defaultValue = noConversation ? "metrics" : "conversation";
     const [textMode, setTextMode] = useState<TextMode>(initialTextMode);
@@ -85,6 +91,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = memo(
                 <Conversation
                   {...conversationElementProps}
                   textMode={textMode}
+                  enableMarkdown={enableMarkdown}
                 />
               </TabsContent>
             )}

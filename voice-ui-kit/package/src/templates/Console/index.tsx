@@ -170,6 +170,14 @@ export interface ConsoleTemplateProps
    * Title displayed in the header. Defaults to "Pipecat Assistant".
    */
   title?: string;
+
+  /**
+   * Enable markdown rendering in conversation messages.
+   * When enabled, assistant messages will be rendered as markdown,
+   * supporting headers, lists, code blocks, tables, links, and more.
+   * @default false
+   */
+  enableMarkdown?: boolean;
 }
 
 const defaultClientOptions: Partial<PipecatClientOptions> = {
@@ -269,6 +277,7 @@ const ConsoleUI = ({
   conversationElementProps,
   onInjectMessage,
   onServerMessage,
+  enableMarkdown = false,
 
   // Passed props
   error,
@@ -445,6 +454,7 @@ const ConsoleUI = ({
                         <ConversationPanel
                           noConversation={noConversation}
                           noMetrics={noMetrics}
+                          enableMarkdown={enableMarkdown}
                           conversationElementProps={{
                             ...conversationElementProps,
                             assistantLabel: assistantLabelText,
@@ -600,6 +610,7 @@ const ConsoleUI = ({
                   <ConversationPanel
                     noConversation={noConversation}
                     noMetrics={noMetrics}
+                    enableMarkdown={enableMarkdown}
                   />
                 </div>
                 <div className="p-2 flex gap-2 items-end">

@@ -15,6 +15,7 @@ export default function Home() {
           connectParams={{
             endpoint: "/api/connect",
           }}
+          enableMarkdown={true}
           noUserVideo
           collapseMediaPanel={true}
           collapseInfoPanel={true}

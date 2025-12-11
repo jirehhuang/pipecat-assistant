@@ -21,6 +21,8 @@ from custom import make_assistant_llm
 
 load_dotenv(override=True)
 
+ENDPOINT_API_KEY = os.getenv("API_KEY")
+
 
 # Global pipeline state
 class PipelineState:
@@ -173,7 +175,7 @@ app = FastAPI(lifespan=lifespan)
 
 async def verify_api_key(x_api_key: str = Header(...)):
     """Verify the API key from the request header."""
-    if x_api_key != os.getenv("API_KEY"):
+    if x_api_key != ENDPOINT_API_KEY:
         raise HTTPException(status_code=401, detail="Invalid API Key")
 
 

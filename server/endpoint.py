@@ -207,4 +207,4 @@ async def process_query(request: QueryRequest):
 
 if __name__ == "__main__":
     port = int(os.getenv("API_PORT", "5476"))
-    uvicorn.run("api:app", host="0.0.0.0", port=port, reload=False)
+    uvicorn.run("endpoint:app", host="0.0.0.0", port=port, reload=False)

@@ -37,7 +37,7 @@ class PipelineState:
         self.task_handle = None
         self.response_queue = asyncio.Queue()
 
-    async def start(self):
+    async def start(self) -> None:
         """Start the persistent pipeline."""
         logger.info("Starting persistent pipeline")
 
@@ -64,14 +64,14 @@ class PipelineState:
 
         logger.info("Persistent pipeline started")
 
-    async def stop(self):
+    async def stop(self) -> None:
         """Stop the persistent pipeline."""
         logger.info("Stopping persistent pipeline")
         if self.task:
             await self.task.cancel()
         if self.task_handle:
             try:
-                await asyncio.wait_for(self.task_handle, timeout=2.0)
+                await asyncio.wait_for(self.task_handle, timeout=5.0)
             except asyncio.TimeoutError:
                 logger.warning("Pipeline shutdown timed out")
         logger.info("Persistent pipeline stopped")

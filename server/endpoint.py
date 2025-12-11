@@ -53,8 +53,8 @@ class PipelineState:
             params=PipelineParams(
                 enable_metrics=False,
                 enable_usage_metrics=False,
-                allow_idle_time_secs=None,
             ),
+            idle_timeout_secs=None,
         )
 
         self.runner = PipelineRunner()

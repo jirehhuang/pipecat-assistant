@@ -8,6 +8,8 @@ dependencies = [
     "pipecatcloud>=0.2.6",
     "piper-tts>=1.0.0,<2.0.0",
     "flask>=3.0.0,<4.0.0",
+    "fastapi>=0.115.0,<1.0.0",
+    "uvicorn>=0.32.0,<1.0.0",
     "jhutils @ https://github.com/jirehhuang/jhutils/archive/c94f655f1c442ccf2813fed618aea08e3b693386.tar.gz",
 ]
 

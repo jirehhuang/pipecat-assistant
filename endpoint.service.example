@@ -1,0 +1,16 @@
+[Unit]
+Description=Pipecat Assistant API Endpoint
+After=network.target
+
+[Service]
+Type=simple
+User=YOUR_USERNAME
+WorkingDirectory=/path/to/pipecat-assistant/server
+ExecStart=/path/to/poetry run python bot.py -t daily --port 5476  # which poetry; specify desired deployment port
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

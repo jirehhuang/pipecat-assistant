@@ -21,7 +21,9 @@ from custom import make_assistant_llm
 
 load_dotenv(override=True)
 
-ENDPOINT_API_KEY = os.getenv("API_KEY")
+API_KEY = os.getenv("API_KEY")
+API_RESPONSE_TIMEOUT = float(os.getenv("API_RESPONSE_TIMEOUT", "30.0"))
+MAX_MESSAGES = int(os.getenv("MAX_MESSAGES", "20"))
 
 
 # Global pipeline state
@@ -129,7 +131,7 @@ class PipelineState:
             "seconds to respond."
         )
 
-    async def process_query(self, query: str, timeout: float = 30.0) -> str:
+    async def process_query(self, query: str, timeout: float) -> str:
         """Process a query through the pipeline.
 
         Parameters
@@ -146,7 +148,7 @@ class PipelineState:
         logger.info(f"Processing query: {query}")
 
         context = self.assistant_llm.context
-        self._trim_context(context, max_messages=20)
+        self._trim_context(context, max_messages=MAX_MESSAGES)
 
         context.add_message({"role": "user", "content": query})
         await self.task.queue_frame(
@@ -175,7 +177,7 @@ app = FastAPI(lifespan=lifespan)
 
 async def verify_api_key(x_api_key: str = Header(...)):
     """Verify the API key from the request header."""
-    if x_api_key != ENDPOINT_API_KEY:
+    if x_api_key != API_KEY:
         raise HTTPException(status_code=401, detail="Invalid API Key")
 
 
@@ -201,8 +203,20 @@ async def process_query(request: QueryRequest):
     -------
         JSON response with the assistant's answer.
     """
-    response_text = await pipeline_state.process_query(request.query)
-    return {"response": response_text}
+    try:
+        response_text = await pipeline_state.process_query(
+            request.query, timeout=API_RESPONSE_TIMEOUT
+        )
+        return {"response": response_text}
+    except Exception as exc:
+        logger.error(f"Error processing query: {exc}")
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "An error occurred while processing your request. "
+                "Please try again later."
+            ),
+        ) from exc
 
 
 if __name__ == "__main__":

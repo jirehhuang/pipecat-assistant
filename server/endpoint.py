@@ -14,6 +14,9 @@ from pipecat.frames.frames import (
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
+from pipecat.processors.aggregators.llm_response import (
+    LLMAssistantAggregatorParams,
+)
 from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
 from pydantic import BaseModel
 
@@ -43,7 +46,13 @@ class PipelineState:
         """Start the persistent pipeline."""
         logger.info("Starting persistent pipeline")
 
-        self.assistant_llm = make_assistant_llm()
+        self.assistant_llm = make_assistant_llm(
+            context_aggregator_params={
+                "assistant_params": LLMAssistantAggregatorParams(
+                    expect_stripped_words=False
+                )
+            }
+        )
 
         processors = [
             self.assistant_llm.context_aggregator.user(),

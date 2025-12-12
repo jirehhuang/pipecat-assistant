@@ -2,7 +2,7 @@
 
 import asyncio
 import os
-from typing import Callable
+from typing import Any, Callable
 
 from jhutils.agent import AssistantAgent, AssistantFactory
 from jhutils.agent.tools._tools import AVAILABLE_MODES
@@ -22,9 +22,15 @@ EXCLUDE_TOOLS: set[str] = {"RespondTool"}
 class AssistantLLM:
     """Class for integrating the assistant with the LLM."""
 
-    def __init__(self, assistant_agent: AssistantAgent):
+    def __init__(
+        self,
+        assistant_agent: AssistantAgent,
+        context_aggregator_params: dict[str, Any] | None = None,
+    ):
         self._assistant = assistant_agent
-        self._initialize_llm()
+        self._initialize_llm(
+            context_aggregator_params=context_aggregator_params
+        )
 
     @property
     def assistant(self) -> AssistantAgent:
@@ -46,7 +52,9 @@ class AssistantLLM:
         """Get the LLM context aggregator."""
         return self._context_aggregator
 
-    def _initialize_llm(self):
+    def _initialize_llm(
+        self, context_aggregator_params: dict[str, Any] | None = None
+    ):
         """Initialize the LLM along with context and context aggregator."""
         # pylint: disable=attribute-defined-outside-init
         self._llm = OpenRouterLLMService(
@@ -55,7 +63,8 @@ class AssistantLLM:
         )
         self._context = OpenAILLMContext(messages=[], tools=[])
         self._context_aggregator = self._llm.create_context_aggregator(
-            self._context
+            self._context,
+            **(context_aggregator_params or {}),
         )
         self._functions: dict[str, FunctionSchema] = {}
         self._handlers: dict[str, Callable] = {}
@@ -217,6 +226,11 @@ class AssistantLLM:
             self._llm.register_function(tool_name, self._handlers[tool_name])
 
 
-def make_assistant_llm() -> AssistantLLM:
+def make_assistant_llm(
+    context_aggregator_params: dict[str, Any] | None = None
+) -> AssistantLLM:
     """Create an AssistantLLM instance."""
-    return AssistantLLM(assistant_agent=assistant_factory.assistant)
+    return AssistantLLM(
+        assistant_agent=assistant_factory.assistant,
+        context_aggregator_params=context_aggregator_params,
+    )

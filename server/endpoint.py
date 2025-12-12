@@ -40,7 +40,6 @@ class PipelineState:
         self.task = None
         self.runner = None
         self.task_handle = None
-        self.response_queue = asyncio.Queue()
 
     async def start(self) -> None:
         """Start the persistent pipeline."""

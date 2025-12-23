@@ -70,6 +70,7 @@ tmp/
 
 # Secrets
 .env
+.env.test
 
 #----------------------------------------------------------------------
 # https://github.com/pipecat-ai/voice-ui-kit/blob/main/.gitignore

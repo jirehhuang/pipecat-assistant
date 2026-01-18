@@ -10,7 +10,7 @@ dependencies = [
     "flask>=3.0.0,<4.0.0",
     "fastapi>=0.115.0,<1.0.0",
     "uvicorn>=0.32.0,<1.0.0",
-    "atomictools @ https://github.com/jirehhuang/atomictools/archive/78e06502ca8fd622607a43795347f88756731ada.tar.gz",
+    "atomictools @ https://github.com/jirehhuang/atomictools/archive/7ae6927be02977e946c8994b3287eac68a75bff6.tar.gz",
 ]
 
 [tool.poetry]

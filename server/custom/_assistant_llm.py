@@ -4,8 +4,8 @@ import asyncio
 import os
 from typing import Any, Callable
 
-from jhutils.agent import AssistantAgent, AssistantFactory
-from jhutils.agent.tools._tools import AVAILABLE_MODES
+from atomictools.agent import AssistantAgent, AssistantFactory
+from atomictools.agent.tools._tools import AVAILABLE_MODES
 from loguru import logger
 from pipecat.adapters.schemas.function_schema import FunctionSchema
 from pipecat.adapters.schemas.tools_schema import ToolsSchema

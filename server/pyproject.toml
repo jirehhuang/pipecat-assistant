@@ -18,7 +18,7 @@ package-mode = false
 
 [tool.poetry.group.dev.dependencies]
 black = "^26.1.0"
-ruff = "^0.14.0"
+ruff = "^0.15.1"
 flake8 = "^7.1.0"
 mypy = "^1.8.0"
 pylint = "^4.0.0"
